@@ -1,6 +1,6 @@
 (() => {
 'use strict';
-const LAT=36.8878, LON=22.2316, ZONE='Europe/Athens', CACHE_KEY='mani-weather-live-v3';
+const LAT=36.8243, LON=22.2811, ZONE='Europe/Athens', CACHE_KEY='mani-weather-live-v4';
 const mainFields={current:'temperature_2m,weather_code,is_day,wind_speed_10m,wind_gusts_10m', hourly:'temperature_2m,weather_code,precipitation,precipitation_probability,wind_speed_10m,wind_gusts_10m', daily:'weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,wind_gusts_10m_max,wind_speed_10m_max'};
 const el=id=>document.getElementById(id);
 const fmt=(v,d=0)=>Number.isFinite(v)?Number(v).toFixed(d):'—';
