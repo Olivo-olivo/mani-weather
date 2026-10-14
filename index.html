@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; connect-src https://api.open-meteo.com; img-src 'self' data:; font-src 'self'; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex,nofollow">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#10283b">
+<meta name="description" content="Live five-day weather guidance for Kardamyli, Mani with rain timing, wind gusts and model comparisons.">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" type="image/svg+xml" href="./icon.svg">
+<title>Mani Weather · Kardamyli</title>
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+<div class="wrap">
+<main class="panel">
+<header class="top"><div><div class="eyebrow">MANI METEOROLOGICAL OBSERVATORY</div><h1>Kardamyli <span class="loc">· Messinia</span></h1><div id="stamp" class="stamp">Contacting forecast service…</div></div><button type="button" id="refresh" class="refresh" title="Refresh the weather forecast" aria-label="Refresh the weather forecast">↻</button></header>
+<div id="status" class="status"><span class="dot busy"></span><span>Loading the latest forecast</span></div>
+<section class="hero" aria-label="Current model-based weather"><div id="icon" class="weather-icon">⛅</div><div id="temp" class="temperature measure">—°</div><div class="hero-info"><div id="cond" class="condition">Loading…</div><div id="today">High —° · Low —°</div><div id="wind">Wind — · gust — km/h</div><div id="at" class="muted">Model estimate, not station observation</div></div></section>
+<section class="pills" aria-label="Today's forecast summary"><div class="pill"><div class="val measure" id="rain">— mm</div><div class="label">Rain today (forecast)</div></div><div class="pill"><div class="val measure" id="chance">—%</div><div class="label">Highest hourly rain chance today</div></div><div class="pill"><div class="val measure" id="maxgust">— km/h</div><div class="label">Peak gust forecast today</div></div></section>
+<div id="risk" class="alert info" role="status" aria-live="polite"><strong>Checking conditions</strong>Analyzing the next 12 hours for rain and wind.</div>
+<div class="sectionline"><span class="sectiontitle">Next 12 hours</span><span id="nextNote" class="sectionhint">Greek local time · two-hour blocks</span></div>
+<section id="hours" class="strip" aria-label="Next twelve-hour forecast"></section>
+<div class="sectionline"><span class="sectiontitle">Five-day outlook</span><span class="sectionhint">Peak hourly chance · daily rain</span></div>
+<table class="table" aria-label="Five-day forecast"><thead><tr><th scope="col">Day</th><th scope="col">High / low</th><th scope="col">Rain</th><th scope="col">Gust</th></tr></thead><tbody id="days"><tr><td colspan="4">Connecting…</td></tr></tbody></table>
+<div class="detail hidden" id="detail" aria-live="polite"></div>
+<section class="models" aria-label="Independent numerical-model comparison"><div class="modeltitle">ICON–ECMWF model comparison</div><div id="models"><div class="modelnote">Loading the two model forecasts…</div></div></section>
+<div id="error" class="errorblock hidden" role="alert"></div>
+</main>
+<footer class="footer">Forecast for the public Kardamyli town area · Forecast data from <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo</a> (CC BY 4.0). Model output may differ from weather measured at your property. Weather risk notices here are automated estimates, <strong>not official alerts</strong>. Visit <a href="https://www.emy.gr/" target="_blank" rel="noopener noreferrer">EMY</a> for official Greek warnings.
+<div class="links"><a href="https://w2.meteo.gr/cf.cfm?city_id=242" target="_blank" rel="noopener noreferrer">Kardamyli observations ↗</a><a href="https://open-meteo.com/en/docs" target="_blank" rel="noopener noreferrer">Forecast methodology ↗</a></div></footer>
+</div>
+<script src="./app.js" defer></script>
+</body></html>
