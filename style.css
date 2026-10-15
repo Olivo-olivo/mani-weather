@@ -25,3 +25,5 @@
 
 /* Improve readability of rainfall model comparison explanation. */
 .modelcompare .modelnote{color:#fff}
+
+.credit{text-align:center;color:#b7cfdd;font-size:11.5px;letter-spacing:.02em;padding:2px 8px 0}
