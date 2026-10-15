@@ -11,3 +11,4 @@
 @media(min-width:560px){body{padding:55px 20px}.panel{padding:28px 26px}h1{font-size:29px}.temperature{font-size:58px}.hero{gap:17px}.strip{gap:8px}}
 @media(max-width:365px){.temperature{font-size:43px}.weather-icon{font-size:42px;flex-basis:43px}.hero{gap:9px}.table td{font-size:11px}.pill .val{font-size:17px}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;scroll-behavior:auto!important}}
+.modelcompare{margin-top:14px;padding:12px;border:1px solid #42647b;border-radius:11px;background:#102f42}.modelcompare .modelrow{padding:2px 0}.modelcompare .modelnote{border-top:1px solid #35546b;padding-top:9px}
