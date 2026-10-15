@@ -12,3 +12,13 @@
 @media(max-width:365px){.temperature{font-size:43px}.weather-icon{font-size:42px;flex-basis:43px}.hero{gap:9px}.table td{font-size:11px}.pill .val{font-size:17px}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;scroll-behavior:auto!important}}
 .modelcompare{margin-top:14px;padding:12px;border:1px solid #42647b;border-radius:11px;background:#102f42}.modelcompare .modelrow{padding:2px 0}.modelcompare .modelnote{border-top:1px solid #35546b;padding-top:9px}
+
+/* Subtle readability increase; retain existing grids and spacing. */
+.eyebrow,.pill .label,.sectionhint,.hour time,.hour .hprob,.small,.detailnote,.detailcell,.modelnote,.table th{font-size:10.5px}
+.stamp,.status,.footer{font-size:11.5px}
+.hero-info,.alert,.table td,.detailhead,.modelrow{font-size:12.5px}
+.sectiontitle,.alert strong{font-size:13.5px}
+.condition{font-size:14.5px}
+.hour .htemp,.detailcell strong{font-size:12.5px}
+.hour .hmm{font-size:9.5px}
+@media(max-width:365px){.table td{font-size:11.3px}.hour .hprob,.hour time{font-size:10px}.hour .hmm{font-size:9px}}
