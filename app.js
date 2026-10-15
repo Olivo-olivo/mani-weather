@@ -51,7 +51,7 @@ function render(payloadData,{stale=false}={}){
  renderDetail(d,h,payloadData);
  const fetched=new Date(payloadData.savedAt), stamp=athensClock.format(fetched);
  el('stamp').textContent=(stale?'Saved forecast · last fetched ':'Checked at ')+stamp+' Greek time · '+new Intl.DateTimeFormat('en-GB',{timeZone:ZONE,day:'numeric',month:'short'}).format(fetched);
- setStatus(stale?'Offline or service unavailable · showing saved forecast':'Forecast downloaded successfully',stale?'error':'');
+ setStatus(stale?'Offline or service unavailable · showing saved forecast':'Forecast updated successfully',stale?'error':'');
  }
 function renderDetail(d,h,forecast){const box=el('detail');if(selectedDay<0||!d.time[selectedDay]){box.classList.add('hidden');box.innerHTML='';return}const dt=d.time[selectedDay],matches=h.time.map((t,i)=>t.startsWith(dt)?i:-1).filter(i=>i>=0);let arr=[];
  for(let j=0;j<matches.length;j+=3){const ix=matches.slice(j,j+3),ps=ix.map(i=>h.precipitation_probability?.[i]).filter(Number.isFinite),gusts=ix.map(i=>h.wind_gusts_10m?.[i]).filter(Number.isFinite);let mm=ix.reduce((a,i)=>a+(Number.isFinite(h.precipitation?.[i])?h.precipitation[i]:0),0);arr.push({t:h.time[ix[0]].slice(11,16),c:h.weather_code?.[ix[0]],temp:h.temperature_2m?.[ix[0]],p:ps.length?Math.max(...ps):null,mm,g:gusts.length?Math.max(...gusts):null})}
