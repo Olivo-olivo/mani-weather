@@ -1,7 +1,7 @@
 (() => {
 'use strict';
 const LAT=36.8243, LON=22.2811, ZONE='Europe/Athens', CACHE_KEY='mani-weather-live-v4';
-const mainFields={current:'temperature_2m,weather_code,is_day,wind_speed_10m,wind_gusts_10m', hourly:'temperature_2m,weather_code,precipitation,precipitation_probability,wind_speed_10m,wind_gusts_10m', daily:'weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,wind_gusts_10m_max,sunrise,sunset'};
+const mainFields={current:'temperature_2m,weather_code,is_day,precipitation,wind_speed_10m,wind_gusts_10m', hourly:'temperature_2m,weather_code,precipitation,precipitation_probability,wind_speed_10m,wind_gusts_10m', daily:'weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,wind_gusts_10m_max,sunrise,sunset'};
 const el=id=>document.getElementById(id);
 const fmt=(v,d=0)=>Number.isFinite(v)?Number(v).toFixed(d):'—';
 const probability=(v)=>Number.isFinite(v)?Math.round(v)+'%':'N/A';
@@ -37,14 +37,30 @@ function safeSave(payload){try{localStorage.setItem(CACHE_KEY,JSON.stringify(pay
 function safeLoad(){try{const x=JSON.parse(localStorage.getItem(CACHE_KEY)||'null');return x&&x.data&&x.savedAt?x:null}catch(e){return null}}
 let payload=null,selectedDay=-1,updating=false;
 function setStatus(message,style){el('status').innerHTML='<span class="dot '+(style||'')+'"></span><span>'+message+'</span>'}
-function modelAtCurrent(hourly,current){if(!hourly?.time?.length)return null;const point=current?.time||localISO();let best=0;for(let i=0;i<hourly.time.length;i++){if(hourly.time[i]<=point)best=i;else break}return best}
+function modelAtCurrent(hourly,current){if(!hourly?.time?.length)return null;const point=current?.time||localISO();let best=null;for(let i=0;i<hourly.time.length;i++){if(hourly.time[i]<=point)best=i;else break}return best}
+function wetCode(code){return Number.isFinite(code)&&((code>=51&&code<=86)||(code>=95&&code<=99));}
+function currentSummary(c,h,d){
+ const at=c.time||localISO(), i=modelAtCurrent(h,{time:at});
+ // Do not borrow rain guidance from another date or an expired hourly range.
+ const sameHour=i!==null&&h.time[i].slice(0,13)===at.slice(0,13);
+ const hourlyCode=sameHour?h.weather_code?.[i]:null;
+ const chance=sameHour?h.precipitation_probability?.[i]:null;
+ const day=c.is_day===0?false:c.is_day===1?true:isDayAt(at,d);
+ const code=Number.isFinite(c.weather_code)?c.weather_code:hourlyCode;
+ if(wetCode(code))return {glyph:icon(code,day),text:description(code)};
+ if(Number.isFinite(c.precipitation)&&c.precipitation>0)return {glyph:'🌧️',text:'Rain or drizzle'};
+ // An hourly prediction is guidance for the hour, not an observation of rain now.
+ if(wetCode(hourlyCode))return {glyph:icon(hourlyCode,day),text:hourlyCode>=95?'Thunderstorms possible this hour':description(hourlyCode)+' forecast this hour'};
+ if(Number.isFinite(chance)&&chance>=40)return {glyph:icon(code,day,chance),text:chance>=60?'Rain likely this hour':'Rain possible this hour'};
+ return {glyph:icon(code,day),text:description(code)};
+}
 function nextHourIndex(hourly){const t=localISO().slice(0,13)+':00';let idx=hourly.time.findIndex(x=>x>=t);return idx<0?hourly.time.length:idx}
 function render(payloadData,{stale=false}={}){
  const a=payloadData.data, d=a.daily, h=a.hourly, c=a.current||{};
  if(!d?.time?.length||!h?.time?.length||d.time.length<5)throw Error('Incomplete forecast data');
  const dateToday=localISO().slice(0,10), todayIndex=d.time.indexOf(dateToday), dayIndex=todayIndex>=0?todayIndex:0;
- const usableC=Number.isFinite(c.temperature_2m),hi=modelAtCurrent(h,c),temperature=usableC?c.temperature_2m:h.temperature_2m?.[hi],wcode=usableC?c.weather_code:h.weather_code?.[hi],isDay=usableC?c.is_day:1;
- el('icon').textContent=icon(wcode,isDay===1);el('temp').textContent=fmt(temperature)+'°';el('cond').textContent=description(wcode);
+ const usableC=Number.isFinite(c.temperature_2m),hi=modelAtCurrent(h,c),temperature=usableC?c.temperature_2m:h.temperature_2m?.[hi],summary=currentSummary(c,h,d);
+ el('icon').textContent=summary.glyph;el('temp').textContent=fmt(temperature)+'°';el('cond').textContent=summary.text;
  el('today').textContent='High '+fmt(d.temperature_2m_max?.[dayIndex])+'° · Low '+fmt(d.temperature_2m_min?.[dayIndex])+'°';
  el('wind').textContent='Wind '+fmt(c.wind_speed_10m)+' · gust '+fmt(c.wind_gusts_10m)+' km/h';
  el('at').textContent='Model estimate '+(c.time?.replace('T',' ')||'—')+' · not a station reading';
