@@ -61,7 +61,7 @@ function render(payloadData,{stale=false}={}){
  const risk=el('risk');risk.className='alert '+(parts.length?'':'ok');
  risk.innerHTML='<strong>'+(parts.length?'⚠ '+parts.join(' · '):'✓ No major modeled hazard in the next 12 hours')+'</strong>'+
  'Next 12 hours: '+fmt(sum,1)+' mm forecast · highest hourly rain chance '+fmt(peak)+'% · peak gust '+fmt(peakGust)+' km/h.';
- el('nextNote').textContent='Greek time · next 12 hours';
+ 
  const group=[];for(let j=0;j<hours.length;j+=2){const ids=hours.slice(j,j+2);if(!ids.length)continue;const last=ids[ids.length-1], first=ids[0];const accum=ids.reduce((s,i)=>s+(Number.isFinite(h.precipitation?.[i])?h.precipitation[i]:0),0);const per=ids.map(i=>h.precipitation_probability?.[i]).filter(Number.isFinite);const gp=per.length?Math.max(...per):null;
  group.push({time:h.time[first].slice(11,16),at:h.time[first],temp:h.temperature_2m?.[first],code:h.weather_code?.[first],mm:accum,prob:gp})}
  el('hours').innerHTML=group.map(x=>'<div class="hour"><time>'+x.time+'</time><span class="glyph">'+icon(x.code,isDayAt(x.at,d),x.prob)+'</span><div class="htemp">'+fmt(x.temp)+'°</div><div class="hprob">'+fmt(x.prob)+'%</div><div class="hmm">'+fmt(x.mm,1)+'mm</div></div>').join('')||'<div>Hourly forecast unavailable</div>';
