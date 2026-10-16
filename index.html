@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; connect-src https://api.open-meteo.com; img-src 'self' data:; font-src 'self'; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; connect-src https://api.open-meteo.com https://api.rainviewer.com; img-src 'self' data: https://tilecache.rainviewer.com; font-src 'self'; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests">
 <meta name="referrer" content="no-referrer">
 <meta name="robots" content="noindex,nofollow">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -21,6 +21,19 @@
 <section class="hero" aria-label="Current model-based weather"><div id="icon" class="weather-icon">⛅</div><div id="temp" class="temperature measure">—°</div><div class="hero-info"><div id="cond" class="condition">Loading…</div><div id="today">High —° · Low —°</div><div id="wind">Wind — · gust — km/h</div><div id="at" class="muted">Model estimate, not station observation</div></div></section>
 <section class="pills" aria-label="Today's forecast summary"><div class="pill"><div class="val measure" id="chance">—%</div><div class="label">Highest hourly rain chance today</div></div><div class="pill"><div class="val measure" id="rain">— mm</div><div class="label">Rain today (forecast)</div></div><div class="pill"><div class="val measure" id="maxgust">— km/h</div><div class="label">Peak gust forecast today</div></div></section>
 <div id="risk" class="alert info" role="status" aria-live="polite"><strong>Checking conditions</strong>Analyzing the next 12 hours for rain and wind.</div>
+<details id="radarPanel" class="radar-panel">
+<summary>Recent rain radar <span class="radar-beta">BETA · tap to view</span></summary>
+<div class="radar-body">
+<div id="radarStatus" class="radar-status" role="status" aria-live="polite">Open to load recent radar imagery.</div>
+<div id="radarMap" class="radar-map hidden">
+<img id="radarImage" alt="Recent radar precipitation image centred on Agios Nikolaos" width="512" height="512" decoding="async">
+<div class="radar-target" aria-hidden="true"></div>
+<span class="radar-location">◎ Agios Nikolaos</span>
+</div>
+<div class="radar-controls"><button id="radarPrev" type="button" disabled aria-label="Older radar frame">← Earlier</button><span id="radarFrameTime">—</span><button id="radarNext" type="button" disabled aria-label="Newer radar frame">Later →</button></div>
+<p class="radar-note">Blue areas represent radar echoes, not confirmed rain at your property. Missing echoes can also mean missing coverage. Radar images may lag the weather; this is not a forecast. Data: <a href="https://www.rainviewer.com/" target="_blank" rel="noopener noreferrer">RainViewer ↗</a></p>
+</div>
+</details>
 <div class="sectionline"><span class="sectiontitle">Next 12 hours</span></div>
 <section id="hours" class="strip" aria-label="Next twelve-hour forecast"></section>
 <div class="sectionline"><span class="sectiontitle">Five-day outlook</span><span class="sectionhint">Peak hourly chance · daily rain</span></div>
