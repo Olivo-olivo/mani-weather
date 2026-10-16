@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; connect-src https://api.open-meteo.com https://api.rainviewer.com; img-src 'self' data: https://tilecache.rainviewer.com https://tile.openstreetmap.org; font-src 'self'; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests">
-<meta name="referrer" content="no-referrer">
+<meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="robots" content="noindex,nofollow">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#10283b">
@@ -11,7 +11,7 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" type="image/svg+xml" href="./icon.svg">
 <title>Mani Weather · Agios Nikolaos Area</title>
-<link rel="stylesheet" href="./style.css">
+<link rel="stylesheet" href="./style.css?v=12">
 </head>
 <body>
 <div class="wrap">
@@ -27,6 +27,7 @@
 <div id="radarStatus" class="radar-status" role="status" aria-live="polite">Open to load recent radar imagery.</div>
 <div id="radarMap" class="radar-map hidden">
 <div id="radarBasemap" class="radar-basemap" aria-hidden="true"></div>
+<span id="radarBasemapWarning" class="radar-map-warning hidden">Map background unavailable · radar echoes only</span>
 <img id="radarImage" alt="Recent radar precipitation image centred on Agios Nikolaos" width="512" height="512" decoding="async">
 <div class="radar-target" aria-hidden="true"></div>
 <span class="radar-location">◎ Agios Nikolaos</span>
@@ -48,5 +49,5 @@
 <div class="links"><a href="https://w2.meteo.gr/cf.cfm?city_id=242" target="_blank" rel="noopener noreferrer" >Nearby Kardamyli observations ↗</a><a href="https://open-meteo.com/en/docs" target="_blank" rel="noopener noreferrer">Forecast methodology ↗</a></div></footer>
 <div class="credit">Prepared by Aykut Turhan and Sol</div>
 </div>
-<script src="./app.js" defer></script>
+<script src="./app.js?v=12" defer></script>
 </body></html>
