@@ -38,7 +38,7 @@
 .radar-body{border-top:1px solid #36556b;padding:10px 12px 12px}
 .radar-status{font-size:11px;color:#c6e4f4;line-height:1.5;padding-bottom:7px}
 .radar-map{height:224px;position:relative;overflow:hidden;border-radius:9px;background-color:#183b4d;background-image:linear-gradient(#4b6a7a45 1px,transparent 1px),linear-gradient(90deg,#4b6a7a45 1px,transparent 1px);background-size:34px 34px}
-.radar-map img{position:absolute;left:50%;top:50%;height:512px;width:512px;max-width:none;transform:translate(-50%,-50%);image-rendering:auto}
+.radar-map #radarImage{position:absolute;left:50%;top:50%;height:512px;width:512px;max-width:none;transform:translate(-50%,-50%);image-rendering:auto;z-index:1}
 .radar-target{position:absolute;left:50%;top:50%;width:76px;height:76px;border:1px solid #ffe99c99;border-radius:50%;transform:translate(-50%,-50%);pointer-events:none}
 .radar-target::after{content:'+';position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:19px;font-weight:700;color:#ffe99c;text-shadow:0 1px 4px #000}
 .radar-location{position:absolute;left:50%;top:calc(50% + 43px);transform:translateX(-50%);white-space:nowrap;font-size:10px;font-weight:740;color:#fff;background:#122739cf;border-radius:7px;padding:3px 7px}
@@ -47,3 +47,10 @@
 .radar-controls button:disabled{opacity:.35;cursor:default}
 .radar-controls span{color:#c5dfed;font-size:10px;text-align:center}
 .radar-note{font-size:10.5px;line-height:1.6;color:#aac9d9;margin:10px 0 0}
+
+/* Geographic base tiles appear beneath the radar, only when requested. */
+.radar-basemap{position:absolute;left:50%;top:50%;width:512px;height:512px;transform:translate(-50%,-50%);overflow:hidden;filter:brightness(.78) saturate(.8)}
+.radar-basemap img{position:absolute;width:256px;height:256px;max-width:none;display:block}
+.radar-target,.radar-location{z-index:2}
+.radar-attribution{position:absolute;bottom:3px;right:3px;z-index:3;font-size:9px;color:#172b31;background:#ffffffd9;padding:2px 4px;border-radius:3px;text-decoration:none}
+.radar-attribution:hover{text-decoration:underline}
