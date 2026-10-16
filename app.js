@@ -5,7 +5,14 @@ const mainFields={current:'temperature_2m,weather_code,is_day,precipitation,wind
 const el=id=>document.getElementById(id);
 const fmt=(v,d=0)=>Number.isFinite(v)?Number(v).toFixed(d):'—';
 const probability=(v)=>Number.isFinite(v)?Math.round(v)+'%':'N/A';
-function dayProbability(d,h,i){const direct=d.precipitation_probability_max?.[i];if(Number.isFinite(direct))return direct;const date=d.time?.[i];if(!date)return null;const values=(h.time||[]).flatMap((t,j)=>t.startsWith(date)&&Number.isFinite(hourValue(h,'precipitation_probability',j))?[hourValue(h,'precipitation_probability',j)]:[]);return values.length?Math.max(...values):null;}
+function dayProbability(d,h,i){
+ const date=d.time?.[i], slots=(h.time||[]).flatMap((t,j)=>date&&t.startsWith(date)?[j]:[]);
+ const values=slots.map(j=>hourValue(h,'precipitation_probability',j));
+ if(slots.length&&values.every(Number.isFinite))return Math.max(...values);
+ const direct=d.precipitation_probability_max?.[i];
+ if(Number.isFinite(direct))return direct;
+ const available=values.filter(Number.isFinite);return available.length?Math.max(...available):null;
+}
 // Accumulations, probabilities and gusts describe the hour ending at the API timestamp.
 function hourValue(h,key,i){return i+1<h.time.length?h[key]?.[i+1]:null;}
 function sumValues(values){return values.length&&values.every(Number.isFinite)?values.reduce((s,v)=>s+v,0):null;}
