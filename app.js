@@ -94,6 +94,34 @@ function renderModels(x){const b=x.icon, c=x.ecmwf, box=el('models');let result=
 const RADAR_API='https://api.rainviewer.com/public/weather-maps.json';
 let radarFrames=[],radarIndex=-1,radarLastChecked=0,radarBusy=false;
 function radarClock(sec){return new Intl.DateTimeFormat('en-GB',{timeZone:ZONE,hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date(sec*1000));}
+function ensureRadarBaseMap(){
+ const base=el('radarBasemap');
+ if(base.dataset.ready==='1')return;
+ // RainViewer 512px images are hi-DPI at z=7; displayed at 512 CSS px
+ // they match the geographic scale of standard 256px OSM tiles at z=8.
+ const zoom=8, size=256, world=size*Math.pow(2,zoom);
+ const lat=LAT*Math.PI/180;
+ const centerX=(LON+180)/360*world;
+ const centerY=(1-Math.log(Math.tan(lat)+1/Math.cos(lat))/Math.PI)/2*world;
+ const map=el('radarMap');
+ const halfW=Math.min(256,Math.ceil(map.clientWidth/2)+1);
+ const halfH=Math.min(256,Math.ceil(map.clientHeight/2)+1);
+ const minX=Math.floor((centerX-halfW)/size), maxX=Math.floor((centerX+halfW-1)/size);
+ const minY=Math.floor((centerY-halfH)/size), maxY=Math.floor((centerY+halfH-1)/size);
+ const fragment=document.createDocumentFragment();
+ for(let x=minX;x<=maxX;x++)for(let y=minY;y<=maxY;y++){
+  if(x<0||y<0||x>=Math.pow(2,zoom)||y>=Math.pow(2,zoom))continue;
+  const tile=document.createElement('img');
+  tile.alt='';tile.decoding='async';
+  tile.referrerPolicy='strict-origin-when-cross-origin';
+  tile.src='https://tile.openstreetmap.org/'+zoom+'/'+x+'/'+y+'.png';
+  tile.style.left=(x*size-centerX+256)+'px';
+  tile.style.top=(y*size-centerY+256)+'px';
+  fragment.appendChild(tile);
+ }
+ base.appendChild(fragment);
+ base.dataset.ready='1';
+}
 function showRadarFrame(){
  const frame=radarFrames[radarIndex];if(!frame)return;
  const age=Math.round((Date.now()-frame.time*1000)/60000);
@@ -103,7 +131,7 @@ function showRadarFrame(){
  el('radarStatus').textContent='Radar image about '+Math.max(0,age)+' minutes old · not a live observation at your property.';
  const img=el('radarImage');
  el('radarMap').classList.add('hidden');
- img.onload=()=>{el('radarMap').classList.remove('hidden');};
+ img.onload=()=>{el('radarMap').classList.remove('hidden');ensureRadarBaseMap();};
  img.onerror=()=>{el('radarMap').classList.add('hidden');el('radarStatus').textContent='Radar image unavailable for this frame. Coverage is not confirmed.';};
  // Only a trusted host is used; frame paths are validated before they reach here.
  img.src='https://tilecache.rainviewer.com'+frame.path+'/512/7/'+LAT+'/'+LON+'/2/0_0.png';
