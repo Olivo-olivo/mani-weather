@@ -90,12 +90,57 @@ function modelComparison(x,date){
 }
 function renderModels(x){const b=x.icon, c=x.ecmwf, box=el('models');let result='';const date=x.data.daily.time?.[1]||'';for(const [name,r] of [['ICON-EU',b],['ECMWF IFS',c]]){const value=r?.daily?.precipitation_sum?.[r.daily.time?.indexOf(date)];result+='<div class="modelrow"><span class="modelname">'+name+' · tomorrow</span><span class="modelvalue">'+fmt(value,1)+' mm</span></div>'}const x1=b?.daily?.precipitation_sum?.[b.daily.time?.indexOf(date)],x2=c?.daily?.precipitation_sum?.[c.daily.time?.indexOf(date)],good=Number.isFinite(x1)&&Number.isFinite(x2);
  result+='<div class="modelnote">'+(good?(Math.abs(x1-x2)>=5?'Models differ by '+fmt(Math.abs(x1-x2),1)+' mm. Treat tomorrow’s rainfall amount with caution.':'These two models give broadly similar rainfall totals for tomorrow.'):'One or both model feeds are unavailable. No comparison is inferred.')+' These are deterministic forecasts, not ensemble probabilities.</div>';box.innerHTML=result}
+
+const RADAR_API='https://api.rainviewer.com/public/weather-maps.json';
+let radarFrames=[],radarIndex=-1,radarLastChecked=0,radarBusy=false;
+function radarClock(sec){return new Intl.DateTimeFormat('en-GB',{timeZone:ZONE,hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date(sec*1000));}
+function showRadarFrame(){
+ const frame=radarFrames[radarIndex];if(!frame)return;
+ const age=Math.round((Date.now()-frame.time*1000)/60000);
+ el('radarPrev').disabled=radarIndex===0;
+ el('radarNext').disabled=radarIndex===radarFrames.length-1;
+ el('radarFrameTime').textContent=radarClock(frame.time)+' Greek time';
+ el('radarStatus').textContent='Radar image about '+Math.max(0,age)+' minutes old · not a live observation at your property.';
+ const img=el('radarImage');
+ el('radarMap').classList.add('hidden');
+ img.onload=()=>{el('radarMap').classList.remove('hidden');};
+ img.onerror=()=>{el('radarMap').classList.add('hidden');el('radarStatus').textContent='Radar image unavailable for this frame. Coverage is not confirmed.';};
+ // Only a trusted host is used; frame paths are validated before they reach here.
+ img.src='https://tilecache.rainviewer.com'+frame.path+'/512/7/'+LAT+'/'+LON+'/2/0_0.png';
+}
+async function refreshRadar(force=false){
+ if(!el('radarPanel').open||radarBusy)return;
+ if(!force&&radarLastChecked&&Date.now()-radarLastChecked<9*60*1000)return;
+ radarBusy=true;el('radarStatus').textContent='Checking radar imagery…';
+ const ctl=new AbortController(),timeout=setTimeout(()=>ctl.abort(),12000);
+ try{
+  const response=await fetch(RADAR_API,{signal:ctl.signal,cache:'no-store'});
+  if(!response.ok)throw Error('radar service unavailable');
+  const manifest=await response.json();
+  if(manifest.host!=='https://tilecache.rainviewer.com')throw Error('unrecognised radar image host');
+  const frames=(manifest.radar?.past||[]).filter(f=>Number.isInteger(f.time)&&/^\\/v2\\/radar\\/[a-z0-9]+$/i.test(f.path)&&f.time*1000<Date.now()+300000).slice(-6);
+  if(!frames.length)throw Error('no recent radar frames');
+  if(Date.now()-frames[frames.length-1].time*1000>45*60*1000)throw Error('radar images are too old');
+  radarFrames=frames;radarIndex=frames.length-1;radarLastChecked=Date.now();showRadarFrame();
+ }catch(err){
+  radarLastChecked=0;radarFrames=[];radarIndex=-1;
+  el('radarMap').classList.add('hidden');
+  el('radarPrev').disabled=true;el('radarNext').disabled=true;
+  el('radarFrameTime').textContent='—';
+  el('radarStatus').textContent='Recent radar unavailable ('+(err.name==='AbortError'?'request timed out':err.message||'connection problem')+'). This does not mean it is dry.';
+ }finally{clearTimeout(timeout);radarBusy=false;}
+}
+el('radarPanel').addEventListener('toggle',()=>{if(el('radarPanel').open)refreshRadar()});
+el('radarPrev').addEventListener('click',()=>{if(radarIndex>0){radarIndex--;showRadarFrame()}});
+el('radarNext').addEventListener('click',()=>{if(radarIndex<radarFrames.length-1){radarIndex++;showRadarFrame()}});
+setInterval(()=>{if(!document.hidden&&el('radarPanel').open)refreshRadar()},2*60*1000);
+
 async function refresh(){if(updating)return;updating=true;const btn=el('refresh');btn.disabled=true;btn.innerHTML='<span class="spin">↻</span>';el('error').classList.add('hidden');setStatus('Checking current forecast…','busy');
  try{const f=await Promise.allSettled([request(buildUrl('best_match',mainFields)),request(buildUrl('icon_eu',{daily:'precipitation_sum'})),request(buildUrl('ecmwf_ifs025',{daily:'precipitation_sum'})),request(buildUrl('gfs_global',{daily:'precipitation_sum'}))]);if(f[0].status!=='fulfilled')throw f[0].reason||Error('Forecast service unavailable');const a=f[0].value;if(!a.daily?.time||!a.hourly?.time)throw Error('Incomplete forecast data');
  payload={data:a,icon:f[1].status==='fulfilled'?f[1].value:null,ecmwf:f[2].status==='fulfilled'?f[2].value:null,gfs:f[3].status==='fulfilled'?f[3].value:null,savedAt:new Date().toISOString()};safeSave(payload);render(payload);}
  catch(err){const cached=safeLoad();if(cached){try{payload=cached;render(payload,{stale:true})}catch(e){setStatus('Weather data unavailable','error')}}else{setStatus('Unable to connect to weather service','error');el('stamp').textContent='Could not retrieve live data';}el('error').textContent='Live forecast not available: '+(err.name==='AbortError'?'connection timed out':(err.message||'network error'))+'. '+(cached?'Displaying saved data, which may be outdated.':'Check connectivity and press refresh.');el('error').classList.remove('hidden');}
  finally{updating=false;btn.disabled=false;btn.textContent='↻'}}
- el('refresh').addEventListener('click',refresh);
+ el('refresh').addEventListener('click',()=>{refresh();refreshRadar(true)});
  document.addEventListener('visibilitychange',()=>{if(!document.hidden&&payload&&Date.now()-Date.parse(payload.savedAt)>20*60*1000)refresh()});
  setInterval(()=>{if(!document.hidden&&(!payload||Date.now()-Date.parse(payload.savedAt)>30*60*1000))refresh()},5*60*1000);
  if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js').catch(()=>{});
