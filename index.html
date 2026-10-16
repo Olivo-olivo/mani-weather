@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; connect-src https://api.open-meteo.com https://api.rainviewer.com; img-src 'self' data: https://tilecache.rainviewer.com; font-src 'self'; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; connect-src https://api.open-meteo.com https://api.rainviewer.com; img-src 'self' data: https://tilecache.rainviewer.com https://tile.openstreetmap.org; font-src 'self'; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests">
 <meta name="referrer" content="no-referrer">
 <meta name="robots" content="noindex,nofollow">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -26,9 +26,11 @@
 <div class="radar-body">
 <div id="radarStatus" class="radar-status" role="status" aria-live="polite">Open to load recent radar imagery.</div>
 <div id="radarMap" class="radar-map hidden">
+<div id="radarBasemap" class="radar-basemap" aria-hidden="true"></div>
 <img id="radarImage" alt="Recent radar precipitation image centred on Agios Nikolaos" width="512" height="512" decoding="async">
 <div class="radar-target" aria-hidden="true"></div>
 <span class="radar-location">◎ Agios Nikolaos</span>
+<a class="radar-attribution" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">© OpenStreetMap contributors</a>
 </div>
 <div class="radar-controls"><button id="radarPrev" type="button" disabled aria-label="Older radar frame">← Earlier</button><span id="radarFrameTime">—</span><button id="radarNext" type="button" disabled aria-label="Newer radar frame">Later →</button></div>
 <p class="radar-note">Blue areas represent radar echoes, not confirmed rain at your property. Missing echoes can also mean missing coverage. Radar images may lag the weather; this is not a forecast. Data: <a href="https://www.rainviewer.com/" target="_blank" rel="noopener noreferrer">RainViewer ↗</a></p>
