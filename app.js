@@ -120,7 +120,7 @@ function modelComparison(x,date){
  else if(spread>=5||high>=2&&low>0&&high/low>=3)interpretation='Models differ substantially on rainfall amounts. Treat the totals cautiously.';
  else interpretation='Available models give broadly similar rainfall amounts.';
  }
- return '<div class="modelcompare"><div class="detailhead">Rainfall · model comparison</div>'+rows.map(r=>'<div class="modelrow"><span class="modelname">'+r.name+'</span><span class="modelvalue">'+(r.mm===null?'Not available':fmt(r.mm,1)+' mm')+'</span></div>').join('')+'<div class="modelnote">'+interpretation+' '+valid.length+' of 3 model feeds available. These are deterministic forecasts, not ensemble probabilities; rainfall amounts do not represent rain chances.</div></div>';
+ return '<div class="modelcompare"><div class="detailhead">Rainfall · model comparison</div>'+rows.map(r=>'<div class="modelrow"><span class="modelname">'+r.name+'</span><span class="modelvalue">'+(r.mm===null?'Not available':fmt(r.mm,1)+' mm')+'</span></div>').join('')+'<div class="modelnote">'+interpretation+' '+valid.length+' of 3 model feeds available. <span class="model-methodology">These are deterministic forecasts, not ensemble probabilities; rainfall amounts do not represent rain chances.</span></div></div>';
 }
 const RADAR_API='https://api.rainviewer.com/public/weather-maps.json';
 let radarFrames=[],radarIndex=-1,radarLastChecked=0,radarBusy=false;

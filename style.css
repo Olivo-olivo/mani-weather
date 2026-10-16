@@ -62,3 +62,6 @@
 /* Expanded forecast rows remain clear to keyboard users. */
 .table tr[data-day]:focus-visible{outline:2px solid #b4e9ff;outline-offset:-2px}
 @media(max-width:420px){.hero{flex-wrap:wrap}.hero-info{flex:1 1 150px}.condition{overflow-wrap:anywhere}}
+
+/* Keep the methodology note secondary to the model interpretation. */
+.modelcompare .model-methodology{color:#8fb1c2}
