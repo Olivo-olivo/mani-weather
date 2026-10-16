@@ -1,12 +1,31 @@
 (() => {
 'use strict';
 const LAT=36.8243, LON=22.2811, ZONE='Europe/Athens', CACHE_KEY='mani-weather-live-v4';
-const mainFields={current:'temperature_2m,weather_code,is_day,wind_speed_10m,wind_gusts_10m', hourly:'temperature_2m,weather_code,precipitation,precipitation_probability,wind_speed_10m,wind_gusts_10m', daily:'weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,wind_gusts_10m_max,wind_speed_10m_max'};
+const mainFields={current:'temperature_2m,weather_code,is_day,wind_speed_10m,wind_gusts_10m', hourly:'temperature_2m,weather_code,precipitation,precipitation_probability,wind_speed_10m,wind_gusts_10m', daily:'weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,wind_gusts_10m_max,sunrise,sunset'};
 const el=id=>document.getElementById(id);
 const fmt=(v,d=0)=>Number.isFinite(v)?Number(v).toFixed(d):'—';
 const probability=(v)=>Number.isFinite(v)?Math.round(v)+'%':'N/A';
 function dayProbability(d,h,i){const direct=d.precipitation_probability_max?.[i];if(Number.isFinite(direct))return direct;const date=d.time?.[i];if(!date)return null;const values=(h.time||[]).flatMap((t,j)=>t.startsWith(date)&&Number.isFinite(h.precipitation_probability?.[j])?[h.precipitation_probability[j]]:[]);return values.length?Math.max(...values):null;}
-function icon(code, day=true){if(code==null)return '⛅';if(code<=1)return day?'☀️':'🌙';if(code<=3)return day?'⛅':'☁️';if(code<=48)return '☁️';if(code>=95)return '⛈️';if(code>=80&&code<=82)return '🌦️';if(code>=51&&code<=67)return '🌧️';if(code>=71&&code<=86)return '🌨️';return '☁️'}
+function icon(code, day=true, rainChance=null){
+ if(code>=95)return '⛈️';
+ if(code>=80&&code<=82)return day?'🌦️':'🌧️';
+ if(code>=51&&code<=67)return '🌧️';
+ if(code>=71&&code<=86)return '🌨️';
+ // Chance changes only the icon, never the forecasted rainfall or probability.
+ if(Number.isFinite(rainChance)&&rainChance>=60)return '🌧️';
+ if(Number.isFinite(rainChance)&&rainChance>=40)return day?'🌦️':'☁️💧';
+ if(code==null)return day?'⛅':'🌙☁️';
+ if(code<=1)return day?'☀️':'🌙';
+ if(code<=3)return day?'⛅':'🌙☁️';
+ return '☁️';
+}
+function isDayAt(localTime,daily){
+ const day=localTime?.slice(0,10), i=daily.time?.indexOf(day)??-1;
+ const sunrise=i>=0?daily.sunrise?.[i]:null, sunset=i>=0?daily.sunset?.[i]:null;
+ if(sunrise&&sunset)return localTime>=sunrise&&localTime<sunset;
+ // Approximation only for previously cached forecasts without sunrise/sunset.
+ const hour=Number(localTime?.slice(11,13));return Number.isFinite(hour)&&hour>=7&&hour<19;
+}
 function description(code){if(code==null)return'Forecast available';if(code<=1)return'Mostly clear';if(code<=3)return'Partly cloudy';if(code<=48)return'Cloudy or foggy';if(code>=95)return'Thunderstorms';if(code>=80&&code<=82)return'Showers';if(code>=51&&code<=67)return'Rain or drizzle';if(code>=71&&code<=86)return'Snow';return'Variable skies'}
 const athensDate=new Intl.DateTimeFormat('sv-SE',{timeZone:ZONE,year:'numeric',month:'2-digit',day:'2-digit'});
 const athensClock=new Intl.DateTimeFormat('en-GB',{timeZone:ZONE,hour:'2-digit',minute:'2-digit',hour12:false});
@@ -44,8 +63,8 @@ function render(payloadData,{stale=false}={}){
  'Next 12 hours: '+fmt(sum,1)+' mm forecast · highest hourly rain chance '+fmt(peak)+'% · peak gust '+fmt(peakGust)+' km/h.';
  el('nextNote').textContent='Greek time · next 12 hours';
  const group=[];for(let j=0;j<hours.length;j+=2){const ids=hours.slice(j,j+2);if(!ids.length)continue;const last=ids[ids.length-1], first=ids[0];const accum=ids.reduce((s,i)=>s+(Number.isFinite(h.precipitation?.[i])?h.precipitation[i]:0),0);const per=ids.map(i=>h.precipitation_probability?.[i]).filter(Number.isFinite);const gp=per.length?Math.max(...per):null;
- group.push({time:h.time[first].slice(11,16),temp:h.temperature_2m?.[first],code:h.weather_code?.[first],mm:accum,prob:gp})}
- el('hours').innerHTML=group.map(x=>'<div class="hour"><time>'+x.time+'</time><span class="glyph">'+icon(x.code)+'</span><div class="htemp">'+fmt(x.temp)+'°</div><div class="hprob">'+fmt(x.prob)+'%</div><div class="hmm">'+fmt(x.mm,1)+'mm</div></div>').join('')||'<div>Hourly forecast unavailable</div>';
+ group.push({time:h.time[first].slice(11,16),at:h.time[first],temp:h.temperature_2m?.[first],code:h.weather_code?.[first],mm:accum,prob:gp})}
+ el('hours').innerHTML=group.map(x=>'<div class="hour"><time>'+x.time+'</time><span class="glyph">'+icon(x.code,isDayAt(x.at,d),x.prob)+'</span><div class="htemp">'+fmt(x.temp)+'°</div><div class="hprob">'+fmt(x.prob)+'%</div><div class="hmm">'+fmt(x.mm,1)+'mm</div></div>').join('')||'<div>Hourly forecast unavailable</div>';
  el('days').innerHTML=d.time.slice(0,5).map((date,i)=>'<tr data-day="'+i+'" tabindex="0" role="button" aria-label="See '+labelDate(date)+' hourly details" aria-selected="'+(i===selectedDay)+'"><td><span class="symbol">'+icon(d.weather_code?.[i])+'</span>'+labelDate(date).split(',')[0]+'</td><td>'+fmt(d.temperature_2m_max?.[i])+'° / '+fmt(d.temperature_2m_min?.[i])+'°</td><td>'+fmt(d.precipitation_probability_max?.[i])+'% <span class="small">· '+fmt(d.precipitation_sum?.[i],1)+'mm</span></td><td>'+fmt(d.wind_gusts_10m_max?.[i])+'</td></tr>').join('');
  el('days').querySelectorAll('tr[data-day]').forEach(row=>{const click=()=>{const x=Number(row.dataset.day);selectedDay=x===selectedDay?-1:x;renderDetail(d,h,payloadData);el('days').querySelectorAll('tr[data-day]').forEach(y=>y.setAttribute('aria-selected',y.dataset.day===String(selectedDay)?'true':'false'))};row.addEventListener('click',click);row.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();click()}})});
  renderDetail(d,h,payloadData);
@@ -54,8 +73,8 @@ function render(payloadData,{stale=false}={}){
  setStatus(stale?'Offline or service unavailable · showing saved forecast':'Forecast updated successfully',stale?'error':'');
  }
 function renderDetail(d,h,forecast){const box=el('detail');if(selectedDay<0||!d.time[selectedDay]){box.classList.add('hidden');box.innerHTML='';return}const dt=d.time[selectedDay],matches=h.time.map((t,i)=>t.startsWith(dt)?i:-1).filter(i=>i>=0);let arr=[];
- for(let j=0;j<matches.length;j+=3){const ix=matches.slice(j,j+3),ps=ix.map(i=>h.precipitation_probability?.[i]).filter(Number.isFinite),gusts=ix.map(i=>h.wind_gusts_10m?.[i]).filter(Number.isFinite);let mm=ix.reduce((a,i)=>a+(Number.isFinite(h.precipitation?.[i])?h.precipitation[i]:0),0);arr.push({t:h.time[ix[0]].slice(11,16),c:h.weather_code?.[ix[0]],temp:h.temperature_2m?.[ix[0]],p:ps.length?Math.max(...ps):null,mm,g:gusts.length?Math.max(...gusts):null})}
- box.classList.remove('hidden');box.innerHTML='<div class="detailhead">'+labelDate(dt,'long')+' · three-hour periods</div><div class="detailnote">Tap the day again to close. Rain chance is the highest hourly chance within each block, and mm is the sum for that block.</div><div class="detailrows">'+arr.map(x=>'<div class="detailcell"><strong>'+x.t+'</strong>'+icon(x.c)+' '+fmt(x.temp)+'°<br>'+probability(x.p)+' rain<br>'+fmt(x.mm,1)+' mm<br>gust '+fmt(x.g)+'</div>').join('')+'</div>'+modelComparison(forecast,dt)}
+ for(let j=0;j<matches.length;j+=3){const ix=matches.slice(j,j+3),ps=ix.map(i=>h.precipitation_probability?.[i]).filter(Number.isFinite),gusts=ix.map(i=>h.wind_gusts_10m?.[i]).filter(Number.isFinite);let mm=ix.reduce((a,i)=>a+(Number.isFinite(h.precipitation?.[i])?h.precipitation[i]:0),0);arr.push({t:h.time[ix[0]].slice(11,16),at:h.time[ix[0]],c:h.weather_code?.[ix[0]],temp:h.temperature_2m?.[ix[0]],p:ps.length?Math.max(...ps):null,mm,g:gusts.length?Math.max(...gusts):null})}
+ box.classList.remove('hidden');box.innerHTML='<div class="detailhead">'+labelDate(dt,'long')+' · three-hour periods</div><div class="detailnote">Tap the day again to close. Rain chance is the highest hourly chance within each block, and mm is the sum for that block.</div><div class="detailrows">'+arr.map(x=>'<div class="detailcell"><strong>'+x.t+'</strong>'+icon(x.c,isDayAt(x.at,d),x.p)+' '+fmt(x.temp)+'°<br>'+probability(x.p)+' rain<br>'+fmt(x.mm,1)+' mm<br>gust '+fmt(x.g)+'</div>').join('')+'</div>'+modelComparison(forecast,dt)}
 function modelComparison(x,date){
  const entries=[['ECMWF IFS',x?.ecmwf],['ICON Europe',x?.icon],['GFS',x?.gfs]];
  const rows=entries.map(([name,data])=>{const i=data?.daily?.time?.indexOf(date)??-1;const mm=i>=0?data.daily.precipitation_sum?.[i]:null;return {name,mm:Number.isFinite(mm)?mm:null}});
