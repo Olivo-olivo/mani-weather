@@ -65,3 +65,6 @@
 
 /* Keep the methodology note secondary to the model interpretation. */
 .modelcompare .model-methodology{color:#8fb1c2}
+
+/* Keep the model timestamp and source note compact. */
+.hero-info #at{font-size:10.5px;line-height:1.45}
