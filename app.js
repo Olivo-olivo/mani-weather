@@ -1,7 +1,7 @@
 (() => {
 'use strict';
 const LAT=36.8243, LON=22.2811, ZONE='Europe/Athens', CACHE_KEY='mani-weather-live-v4', REFRESH_MS=10*60*1000;
-const mainFields={current:'temperature_2m,weather_code,is_day,precipitation,wind_speed_10m,wind_gusts_10m', hourly:'temperature_2m,weather_code,precipitation,precipitation_probability,wind_speed_10m,wind_gusts_10m', daily:'weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,wind_gusts_10m_max,sunrise,sunset'};
+const mainFields={current:'temperature_2m,relative_humidity_2m,weather_code,is_day,precipitation,wind_speed_10m,wind_gusts_10m', hourly:'temperature_2m,relative_humidity_2m,weather_code,precipitation,precipitation_probability,wind_speed_10m,wind_gusts_10m', daily:'weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,wind_gusts_10m_max,sunrise,sunset'};
 const el=id=>document.getElementById(id);
 const fmt=(v,d=0)=>Number.isFinite(v)?Number(v).toFixed(d):'—';
 const probability=(v)=>Number.isFinite(v)?Math.round(v)+'%':'N/A';
@@ -86,6 +86,8 @@ function render(payloadData,{stale=false}={}){
  el('icon').textContent=summary.glyph;el('temp').textContent=fmt(temperature)+'°';el('cond').textContent=summary.text;
  el('today').textContent='High '+fmt(d.temperature_2m_max?.[dayIndex])+'° · Low '+fmt(d.temperature_2m_min?.[dayIndex])+'°';
  el('wind').textContent='Wind '+fmt(c.wind_speed_10m)+' · gust '+fmt(c.wind_gusts_10m)+' km/h';
+ const humidityAt=c.time||localISO(),humidity=Number.isFinite(c.relative_humidity_2m)?c.relative_humidity_2m:hi!==null&&h.time[hi].slice(0,13)===humidityAt.slice(0,13)?h.relative_humidity_2m?.[hi]:null;
+ el('humidity').textContent='Humidity '+fmt(humidity)+'%';
  el('at').textContent='Model estimate '+(c.time?.replace('T',' ')||'—')+' · not a station reading';
  el('rain').textContent=fmt(d.precipitation_sum?.[dayIndex],1)+' mm';el('chance').textContent=probability(remainingDayProbability(h));el('maxgust').textContent=fmt(d.wind_gusts_10m_max?.[dayIndex])+' km/h';
  const nowIdx=nextHourIndex(h), hours=[];
