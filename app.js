@@ -13,6 +13,12 @@ function dayProbability(d,h,i){
  if(Number.isFinite(direct))return direct;
  const available=values.filter(Number.isFinite);return available.length?Math.max(...available):null;
 }
+function remainingDayProbability(h,now=localISO()){
+ const date=now.slice(0,10), start=now.slice(0,13)+':00';
+ const values=(h.time||[]).flatMap((t,i)=>t.startsWith(date)&&t>=start?[hourValue(h,'precipitation_probability',i)]:[]);
+ // Never fall back to the full-day maximum: it can include rain that has passed.
+ return values.length&&values.every(Number.isFinite)?Math.max(...values):null;
+}
 // Accumulations, probabilities and gusts describe the hour ending at the API timestamp.
 function hourValue(h,key,i){return i+1<h.time.length?h[key]?.[i+1]:null;}
 function sumValues(values){return values.length&&values.every(Number.isFinite)?values.reduce((s,v)=>s+v,0):null;}
@@ -81,7 +87,7 @@ function render(payloadData,{stale=false}={}){
  el('today').textContent='High '+fmt(d.temperature_2m_max?.[dayIndex])+'° · Low '+fmt(d.temperature_2m_min?.[dayIndex])+'°';
  el('wind').textContent='Wind '+fmt(c.wind_speed_10m)+' · gust '+fmt(c.wind_gusts_10m)+' km/h';
  el('at').textContent='Model estimate '+(c.time?.replace('T',' ')||'—')+' · not a station reading';
- el('rain').textContent=fmt(d.precipitation_sum?.[dayIndex],1)+' mm';el('chance').textContent=probability(dayProbability(d,h,dayIndex));el('maxgust').textContent=fmt(d.wind_gusts_10m_max?.[dayIndex])+' km/h';
+ el('rain').textContent=fmt(d.precipitation_sum?.[dayIndex],1)+' mm';el('chance').textContent=probability(remainingDayProbability(h));el('maxgust').textContent=fmt(d.wind_gusts_10m_max?.[dayIndex])+' km/h';
  const nowIdx=nextHourIndex(h), hours=[];
  for(let i=nowIdx;i<Math.min(nowIdx+12,h.time.length);i++)hours.push(i);
  const vals=(key)=>hours.map(i=>key==='weather_code'?h[key]?.[i]:hourValue(h,key,i)).filter(Number.isFinite);
@@ -207,7 +213,7 @@ async function refresh(){if(updating)return;updating=true;const btn=el('refresh'
  finally{updating=false;btn.disabled=false;btn.textContent='↻'}}
  el('refresh').addEventListener('click',()=>{refresh();refreshRadar(true)});
  document.addEventListener('visibilitychange',()=>{if(!document.hidden&&(!payload||Date.now()-Date.parse(payload.savedAt)>=REFRESH_MS))refresh()});
- setInterval(()=>{if(!document.hidden&&(!payload||Date.now()-Date.parse(payload.savedAt)>=REFRESH_MS))refresh()},60*1000);
+ setInterval(()=>{if(document.hidden)return;if(payload)el('chance').textContent=probability(remainingDayProbability(payload.data.hourly));if(!payload||Date.now()-Date.parse(payload.savedAt)>=REFRESH_MS)refresh()},60*1000);
  if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js').catch(()=>{});
  refresh();
 })();
