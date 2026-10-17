@@ -37,9 +37,9 @@ function icon(code, day=true, rainChance=null, rainMm=null){
  // Chance changes only the icon, never the forecasted rainfall or probability.
  if(Number.isFinite(rainChance)&&rainChance>=60)return '🌧️';
  if(Number.isFinite(rainChance)&&rainChance>=40)return day?'🌦️':'☁️💧';
- if(code==null)return day?'⛅':'🌙☁️';
+ if(code==null)return day?'⛅':'<img class="weather-symbol" src="./night-partly-cloudy.svg" alt="Partly cloudy night" width="64" height="64">';
  if(code<=1)return day?'☀️':'🌙';
- if(code===2)return day?'⛅':'🌙☁️';
+ if(code===2)return day?'⛅':'<img class="weather-symbol" src="./night-partly-cloudy.svg" alt="Partly cloudy night" width="64" height="64">';
  return '☁️';
 }
 function isDayAt(localTime,daily){
@@ -83,7 +83,7 @@ function render(payloadData,{stale=false}={}){
  if(!d?.time?.length||!h?.time?.length||d.time.length<5)throw Error('Incomplete forecast data');
  const dateToday=localISO().slice(0,10), todayIndex=d.time.indexOf(dateToday), dayIndex=todayIndex>=0?todayIndex:0;
  const usableC=Number.isFinite(c.temperature_2m),hi=modelAtCurrent(h,c),temperature=usableC?c.temperature_2m:h.temperature_2m?.[hi],summary=currentSummary(c,h,d);
- el('icon').textContent=summary.glyph;el('temp').textContent=fmt(temperature)+'°';el('cond').textContent=summary.text;
+ el('icon').innerHTML=summary.glyph;el('temp').textContent=fmt(temperature)+'°';el('cond').textContent=summary.text;
  el('today').textContent='High '+fmt(d.temperature_2m_max?.[dayIndex])+'° · Low '+fmt(d.temperature_2m_min?.[dayIndex])+'°';
  el('wind').textContent='Wind '+fmt(c.wind_speed_10m)+' · gust '+fmt(c.wind_gusts_10m)+' km/h';
  const humidityAt=c.time||localISO(),humidity=Number.isFinite(c.relative_humidity_2m)?c.relative_humidity_2m:hi!==null&&h.time[hi].slice(0,13)===humidityAt.slice(0,13)?h.relative_humidity_2m?.[hi]:null;

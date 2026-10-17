@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="moon" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#ffe779"/><stop offset="1" stop-color="#ffc52f"/>
+    </linearGradient>
+    <linearGradient id="cloud" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#f2f8fb"/><stop offset="1" stop-color="#c5d9e3"/>
+    </linearGradient>
+  </defs>
+  <path fill="url(#moon)" d="M35 4a22 22 0 1 0 19 31A23 23 0 0 1 35 4Z"/>
+  <path fill="#9ebbc9" d="M18 57a9 9 0 0 1-1-18 12 12 0 0 1 22-6 10 10 0 0 1 16 10 7 7 0 0 1 0 14Z"/>
+  <path fill="url(#cloud)" d="M18 54a8 8 0 0 1-1-16 12 12 0 0 1 22-6 10 10 0 0 1 16 10 6 6 0 0 1 0 12Z"/>
+</svg>
