@@ -68,3 +68,6 @@
 
 /* Keep the model timestamp and source note compact. */
 .hero-info #at{font-size:10.5px;line-height:1.45;color:#89a9bc}
+
+/* Today's completed three-hour periods remain visible but secondary. */
+.detailcell.past{opacity:.55}

@@ -114,9 +114,17 @@ function render(payloadData,{stale=false}={}){
  el('stamp').textContent=(stale?'Saved forecast · last fetched ':'Checked at ')+stamp+' Greek time · '+new Intl.DateTimeFormat('en-GB',{timeZone:ZONE,day:'numeric',month:'short'}).format(fetched);
  setStatus(stale?'Offline or service unavailable · showing saved forecast':'Forecast updated successfully',stale?'error':'');
  }
-function renderDetail(d,h,forecast){const box=el('detail');if(selectedDay<0||!d.time[selectedDay]){box.classList.add('hidden');box.innerHTML='';return}const dt=d.time[selectedDay],matches=h.time.map((t,i)=>t.startsWith(dt)?i:-1).filter(i=>i>=0);let arr=[];
+// Detail cards cover three hours in the forecast's Greek local time.
+function isPastDetailPeriod(at,now=localISO()){
+ return at.slice(0,10)===now.slice(0,10)&&Number(at.slice(11,13))+3<=Number(now.slice(11,13));
+}
+function updatePastDetailPeriods(){
+ const now=localISO();
+ el('detail').querySelectorAll('.detailcell[data-period]').forEach(cell=>cell.classList.toggle('past',isPastDetailPeriod(cell.dataset.period,now)));
+}
+function renderDetail(d,h,forecast){const box=el('detail');if(selectedDay<0||!d.time[selectedDay]){box.classList.add('hidden');box.innerHTML='';return}const now=localISO(),dt=d.time[selectedDay],matches=h.time.map((t,i)=>t.startsWith(dt)?i:-1).filter(i=>i>=0);let arr=[];
  for(let j=0;j<matches.length;j+=3){const ix=matches.slice(j,j+3),ps=ix.map(i=>hourValue(h,'precipitation_probability',i)).filter(Number.isFinite),gusts=ix.map(i=>hourValue(h,'wind_gusts_10m',i)).filter(Number.isFinite);let mm=sumValues(ix.map(i=>hourValue(h,'precipitation',i)));arr.push({t:h.time[ix[0]].slice(11,16),at:h.time[ix[0]],c:periodCode(h,ix),temp:h.temperature_2m?.[ix[0]],p:ps.length?Math.max(...ps):null,mm,g:gusts.length?Math.max(...gusts):null})}
- box.classList.remove('hidden');box.innerHTML='<div class="detailhead">'+labelDate(dt,'long')+' · three-hour periods</div><div class="detailnote">Tap the day again to close. Rain chance is the highest hourly chance within each block, and mm is the sum for that block.</div><div class="detailrows">'+arr.map(x=>'<div class="detailcell"><strong>'+x.t+'</strong>'+icon(x.c,isDayAt(x.at,d),x.p,x.mm)+' '+fmt(x.temp)+'°<br>'+probability(x.p)+' rain<br>'+fmt(x.mm,1)+' mm<br>gust '+fmt(x.g)+'</div>').join('')+'</div>'+modelComparison(forecast,dt)}
+ box.classList.remove('hidden');box.innerHTML='<div class="detailhead">'+labelDate(dt,'long')+' · three-hour periods</div><div class="detailnote">Tap the day again to close. Rain chance is the highest hourly chance within each block, and mm is the sum for that block.</div><div class="detailrows">'+arr.map(x=>'<div class="detailcell'+(isPastDetailPeriod(x.at,now)?' past':'')+'" data-period="'+x.at+'"><strong>'+x.t+'</strong>'+icon(x.c,isDayAt(x.at,d),x.p,x.mm)+' '+fmt(x.temp)+'°<br>'+probability(x.p)+' rain<br>'+fmt(x.mm,1)+' mm<br>gust '+fmt(x.g)+'</div>').join('')+'</div>'+modelComparison(forecast,dt)}
 function modelComparison(x,date){
  const entries=[['ECMWF IFS',x?.ecmwf],['ICON Europe',x?.icon],['GFS',x?.gfs]];
  const rows=entries.map(([name,data])=>{const i=data?.daily?.time?.indexOf(date)??-1;const mm=i>=0?data.daily.precipitation_sum?.[i]:null;return {name,mm:Number.isFinite(mm)?mm:null}});
@@ -214,8 +222,8 @@ async function refresh(){if(updating)return;updating=true;const btn=el('refresh'
  catch(err){const cached=safeLoad()||payload;if(cached){try{payload=cached;render(payload,{stale:true})}catch(e){setStatus('Weather data unavailable','error')}}else{setStatus('Unable to connect to weather service','error');el('stamp').textContent='Could not retrieve live data';}el('error').textContent='Live forecast not available: '+(err.name==='AbortError'?'connection timed out':(err.message||'network error'))+'. '+(cached?'Displaying saved data, which may be outdated.':'Check connectivity and press refresh.');el('error').classList.remove('hidden');}
  finally{updating=false;btn.disabled=false;btn.textContent='↻'}}
  el('refresh').addEventListener('click',()=>{refresh();refreshRadar(true)});
- document.addEventListener('visibilitychange',()=>{if(!document.hidden&&(!payload||Date.now()-Date.parse(payload.savedAt)>=REFRESH_MS))refresh()});
- setInterval(()=>{if(document.hidden)return;if(payload)el('chance').textContent=probability(remainingDayProbability(payload.data.hourly));if(!payload||Date.now()-Date.parse(payload.savedAt)>=REFRESH_MS)refresh()},60*1000);
+ document.addEventListener('visibilitychange',()=>{if(!document.hidden){updatePastDetailPeriods();if(!payload||Date.now()-Date.parse(payload.savedAt)>=REFRESH_MS)refresh()}});
+ setInterval(()=>{if(document.hidden)return;updatePastDetailPeriods();if(payload)el('chance').textContent=probability(remainingDayProbability(payload.data.hourly));if(!payload||Date.now()-Date.parse(payload.savedAt)>=REFRESH_MS)refresh()},60*1000);
  if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js').catch(()=>{});
  refresh();
 })();
