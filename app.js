@@ -101,7 +101,7 @@ function render(payloadData,{stale=false}={}){
  if(thunder)parts.push('Possible thunderstorm');if(sum>=7)parts.push('Significant rain forecast');if(peakGust>=50)parts.push('Strong wind gusts possible');
  const complete=hours.length===12&&sum!==null&&vals('weather_code').length===12&&gusts.length===12;
  const risk=el('risk');risk.className='alert '+(parts.length?'':complete?'ok':'info');
- risk.innerHTML='<strong>'+(parts.length?'⚠ '+parts.join(' · '):complete?'✓ No major modeled hazard in the next 12 hours':'Forecast incomplete · hazards cannot be fully assessed')+'</strong>'+
+ risk.innerHTML='<strong>'+(parts.length?'⚠ '+parts.join(' · '):complete?'✓ No major modelled hazard in the next 12 hours':'Forecast incomplete · hazards cannot be fully assessed')+'</strong>'+
  'Next 12 hours: '+fmt(sum,1)+' mm forecast · highest hourly rain chance '+probability(peak)+' · peak gust '+fmt(peakGust)+' km/h.';
  
  const group=[];for(let j=0;j<hours.length;j+=2){const ids=hours.slice(j,j+2);if(!ids.length)continue;const first=ids[0];const accum=sumValues(ids.map(i=>hourValue(h,'precipitation',i)));const per=ids.map(i=>hourValue(h,'precipitation_probability',i)).filter(Number.isFinite);const gp=per.length?Math.max(...per):null;
