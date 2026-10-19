@@ -27,7 +27,7 @@
 .modelcompare .modelnote{color:#fff}
 
 .credit{text-align:center;color:#b7cfdd;font-size:11.5px;letter-spacing:.02em;padding:2px 8px 0}
-.moon-panel{margin:0 0 15px;border:1px solid #36546b;border-radius:18px;background:#10283b;font-size:12px;line-height:1.5;color:#b7cfdd}
+.moon-panel{margin:15px 0 0;border:1px solid #36546b;border-radius:18px;background:#10283b;font-size:12px;line-height:1.5;color:#b7cfdd}
 .moon-panel summary{list-style:none;cursor:pointer;display:grid;grid-template-columns:56px minmax(0,1fr);gap:12px;align-items:center;padding:14px}
 .moon-panel summary::-webkit-details-marker{display:none}
 .moon-panel summary:focus-visible{outline:2px solid #a7dfff;outline-offset:3px;border-radius:18px}
