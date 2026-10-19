@@ -80,3 +80,10 @@
 .detail-wind{white-space:nowrap}
 .wind-direction{display:inline-block;width:1em;height:1em;margin-left:2px;vertical-align:-.12em;color:#a7ddf8}
 .wind-direction svg{display:block;width:100%;height:100%}
+
+
+.install-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.install-app{margin-top:10px;border:1px solid #62829c;border-radius:10px;padding:8px 12px;background:#264d65;color:#eaf6fc;font-size:12px;min-height:44px}
+.install-app[hidden]{display:none}
+#installStatus{font-size:11.5px;color:#b5d1dd}
+@media(display-mode:standalone){body{padding-top:max(16px,env(safe-area-inset-top));padding-bottom:max(24px,env(safe-area-inset-bottom))}}

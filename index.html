@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; connect-src https://api.open-meteo.com https://api.rainviewer.com; img-src 'self' data: https://tilecache.rainviewer.com https://tile.openstreetmap.org; font-src 'self'; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self' https://api.open-meteo.com https://api.rainviewer.com; img-src 'self' data: https://tilecache.rainviewer.com https://tile.openstreetmap.org; font-src 'self'; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="robots" content="noindex,nofollow">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -10,14 +10,16 @@
 <meta name="description" content="Live five-day weather guidance for Agios Nikolaos Area, Mani with rain timing, wind gusts and model comparisons.">
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" type="image/svg+xml" href="./icon.svg">
+<link rel="apple-touch-icon" href="./icons/icon-192.png">
 <title>Mani Weather · Agios Nikolaos Area</title>
-<link rel="stylesheet" href="./style.css?v=23">
+<link rel="stylesheet" href="./style.css?v=24">
 </head>
 <body>
 <div class="wrap">
 <main class="panel">
 <header class="top"><div><div class="eyebrow">MANI METEOROLOGICAL OBSERVATORY</div><h1>Agios Nikolaos Area <span class="loc">· Messinia</span></h1><div id="stamp" class="stamp">Contacting forecast service…</div></div><button type="button" id="refresh" class="refresh" title="Refresh the weather forecast" aria-label="Refresh the weather forecast">↻</button></header>
 <div id="status" class="status"><span class="dot busy"></span><span>Loading the latest forecast</span></div>
+<div class="install-row"><button type="button" id="installApp" class="install-app" hidden>Install app</button><span id="installStatus" role="status" aria-live="polite"></span></div>
 <section class="hero" aria-label="Current model-based weather"><div id="icon" class="weather-icon">⛅</div><div id="temp" class="temperature measure">—°</div><div class="hero-info"><div id="cond" class="condition">Loading…</div><div id="today">High —° · Low —°</div><div id="wind">Wind — · gust — km/h</div><div id="humidity">Humidity —%</div><div id="at" class="muted">Model estimate, not station observation</div></div></section>
 <section class="pills" aria-label="Today's forecast summary"><div class="pill"><div class="val measure" id="chance">—%</div><div class="label">Highest hourly rain chance remaining today</div></div><div class="pill"><div class="val measure" id="rain">— mm</div><div class="label">Rain today (forecast)</div></div><div class="pill"><div class="val measure" id="maxgust">— km/h</div><div class="label">Peak gust forecast today</div></div></section>
 <div id="risk" class="alert info" role="status" aria-live="polite"><strong>Checking conditions</strong>Analyzing the next 12 hours for rain and wind.</div>
@@ -49,5 +51,7 @@
 <div class="links"><a href="https://w2.meteo.gr/cf.cfm?city_id=242" target="_blank" rel="noopener noreferrer" >Nearby Kardamyli observations ↗</a><a href="https://open-meteo.com/en/docs" target="_blank" rel="noopener noreferrer">Forecast methodology ↗</a></div></footer>
 <div class="credit">Prepared by Aykut Turhan and Sol</div>
 </div>
-<script src="./app.js?v=25" defer></script>
+<script src="./app.js?v=26" defer></script>
+<script src="./pwa.js?v=1" defer></script>
 </body></html>
+

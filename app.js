@@ -112,7 +112,11 @@ function render(payloadData,{stale=false}={}){
  renderDetail(d,h,payloadData);
  const fetched=new Date(payloadData.savedAt), stamp=athensClock.format(fetched);
  el('stamp').textContent=(stale?'Saved forecast · last fetched ':'Checked at ')+stamp+' Greek time · '+new Intl.DateTimeFormat('en-GB',{timeZone:ZONE,day:'numeric',month:'short'}).format(fetched);
- setStatus(stale?'Offline or service unavailable · showing saved forecast':'Forecast updated successfully',stale?'error':'');
+ const ageMinutes=Math.max(0,Math.floor((Date.now()-fetched.getTime())/60000));
+ const age=ageMinutes<1?'less than a minute old':ageMinutes<60?ageMinutes+' minutes old':ageMinutes<1440?Math.floor(ageMinutes/60)+' hours old':Math.floor(ageMinutes/1440)+' days old';
+ setStatus(stale?'Saved forecast · '+age+' · live update unavailable':'Forecast updated successfully',stale?'error':'');
+ if(stale){risk.className='alert info';risk.innerHTML='<strong>Saved forecast · check the download date above</strong>Live conditions and hazard guidance could not be checked. Figures below may be out of date.';}
+
  }
 // Detail cards cover three hours in the forecast's Greek local time.
 function isPastDetailPeriod(at,now=localISO()){
@@ -225,13 +229,15 @@ el('radarNext').addEventListener('click',()=>{if(radarIndex<radarFrames.length-1
 setInterval(()=>{if(!document.hidden&&el('radarPanel').open)refreshRadar()},2*60*1000);
 
 async function refresh(){if(updating)return;updating=true;const btn=el('refresh');btn.disabled=true;btn.innerHTML='<span class="spin">↻</span>';el('error').classList.add('hidden');setStatus('Checking current forecast…','busy');
- try{const f=await Promise.allSettled([request(buildUrl('best_match',mainFields)),request(buildUrl('icon_eu',{daily:'precipitation_sum'})),request(buildUrl('ecmwf_ifs025',{daily:'precipitation_sum'})),request(buildUrl('gfs_global',{daily:'precipitation_sum'}))]);if(f[0].status!=='fulfilled')throw f[0].reason||Error('Forecast service unavailable');const a=f[0].value;if(!a.daily?.time||!a.hourly?.time)throw Error('Incomplete forecast data');
+ try{if(navigator.onLine===false)throw Error('device is offline');const f=await Promise.allSettled([request(buildUrl('best_match',mainFields)),request(buildUrl('icon_eu',{daily:'precipitation_sum'})),request(buildUrl('ecmwf_ifs025',{daily:'precipitation_sum'})),request(buildUrl('gfs_global',{daily:'precipitation_sum'}))]);if(f[0].status!=='fulfilled')throw f[0].reason||Error('Forecast service unavailable');const a=f[0].value;if(!a.daily?.time||!a.hourly?.time)throw Error('Incomplete forecast data');
  const next={data:a,icon:f[1].status==='fulfilled'?f[1].value:null,ecmwf:f[2].status==='fulfilled'?f[2].value:null,gfs:f[3].status==='fulfilled'?f[3].value:null,savedAt:new Date().toISOString()};render(next);payload=next;safeSave(payload);}
  catch(err){const cached=safeLoad()||payload;if(cached){try{payload=cached;render(payload,{stale:true})}catch(e){setStatus('Weather data unavailable','error')}}else{setStatus('Unable to connect to weather service','error');el('stamp').textContent='Could not retrieve live data';}el('error').textContent='Live forecast not available: '+(err.name==='AbortError'?'connection timed out':(err.message||'network error'))+'. '+(cached?'Displaying saved data, which may be outdated.':'Check connectivity and press refresh.');el('error').classList.remove('hidden');}
  finally{updating=false;btn.disabled=false;btn.textContent='↻'}}
  el('refresh').addEventListener('click',()=>{refresh();refreshRadar(true)});
  document.addEventListener('visibilitychange',()=>{if(!document.hidden){updatePastDetailPeriods();if(!payload||Date.now()-Date.parse(payload.savedAt)>=REFRESH_MS)refresh()}});
  setInterval(()=>{if(document.hidden)return;updatePastDetailPeriods();if(payload)el('chance').textContent=probability(remainingDayProbability(payload.data.hourly));if(!payload||Date.now()-Date.parse(payload.savedAt)>=REFRESH_MS)refresh()},60*1000);
- if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js').catch(()=>{});
+ window.addEventListener('online',()=>{refresh();refreshRadar(true)});
+ const saved=safeLoad();if(saved){try{render(saved,{stale:true});payload=saved}catch(e){}}
  refresh();
 })();
+
