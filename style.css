@@ -75,3 +75,8 @@
 /* A single scalable image keeps the cloudy-night symbol on one line. */
 .weather-symbol{display:inline-block;width:1em;height:1em;vertical-align:-.12em}
 .hour .glyph .weather-symbol{display:block;width:1.1em;height:1.1em;margin:0 auto}
+
+/* Compact downwind direction arrows beside each detail wind speed. */
+.detail-wind{white-space:nowrap}
+.wind-direction{display:inline-block;width:1em;height:1em;margin-left:2px;vertical-align:-.12em;color:#a7ddf8}
+.wind-direction svg{display:block;width:100%;height:100%}

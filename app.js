@@ -1,7 +1,7 @@
 (() => {
 'use strict';
 const LAT=36.8243, LON=22.2811, ZONE='Europe/Athens', CACHE_KEY='mani-weather-live-v4', REFRESH_MS=10*60*1000;
-const mainFields={current:'temperature_2m,relative_humidity_2m,weather_code,is_day,precipitation,wind_speed_10m,wind_gusts_10m', hourly:'temperature_2m,relative_humidity_2m,weather_code,precipitation,precipitation_probability,wind_speed_10m,wind_gusts_10m', daily:'weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,wind_gusts_10m_max,sunrise,sunset'};
+const mainFields={current:'temperature_2m,relative_humidity_2m,weather_code,is_day,precipitation,wind_speed_10m,wind_gusts_10m', hourly:'temperature_2m,relative_humidity_2m,weather_code,precipitation,precipitation_probability,wind_speed_10m,wind_direction_10m,wind_gusts_10m', daily:'weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,wind_gusts_10m_max,sunrise,sunset'};
 const el=id=>document.getElementById(id);
 const fmt=(v,d=0)=>Number.isFinite(v)?Number(v).toFixed(d):'—';
 const probability=(v)=>Number.isFinite(v)?Math.round(v)+'%':'N/A';
@@ -122,9 +122,17 @@ function updatePastDetailPeriods(){
  const now=localISO();
  el('detail').querySelectorAll('.detailcell[data-period]').forEach(cell=>cell.classList.toggle('past',isPastDetailPeriod(cell.dataset.period,now)));
 }
+function windDirectionArrow(degrees,speed){
+ // Meteorological bearings name the source; the arrow points downwind.
+ if(!Number.isFinite(degrees)||degrees<0||degrees>360||!Number.isFinite(speed)||Math.round(speed)<=0)return '';
+ const bearing=degrees%360,heading=(bearing+180)%360;
+ const compass=['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'][Math.round(bearing/22.5)%16];
+ const label='Wind from '+compass+' ('+Math.round(bearing)%360+'°)';
+ return '<span class="wind-direction" role="img" aria-label="'+label+'" title="'+label+'"><svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true" focusable="false"><path transform="rotate('+heading+' 12 12)" d="M12 2 19 10H14V22H10V10H5Z" fill="currentColor"/></svg></span>';
+}
 function renderDetail(d,h,forecast){const box=el('detail');if(selectedDay<0||!d.time[selectedDay]){box.classList.add('hidden');box.innerHTML='';return}const now=localISO(),dt=d.time[selectedDay],matches=h.time.map((t,i)=>t.startsWith(dt)?i:-1).filter(i=>i>=0);let arr=[];
- for(let j=0;j<matches.length;j+=3){const ix=matches.slice(j,j+3),ps=ix.map(i=>hourValue(h,'precipitation_probability',i)).filter(Number.isFinite),gusts=ix.map(i=>hourValue(h,'wind_gusts_10m',i)).filter(Number.isFinite);let mm=sumValues(ix.map(i=>hourValue(h,'precipitation',i)));arr.push({t:h.time[ix[0]].slice(11,16),at:h.time[ix[0]],c:periodCode(h,ix),temp:h.temperature_2m?.[ix[0]],wind:h.wind_speed_10m?.[ix[0]],p:ps.length?Math.max(...ps):null,mm,g:gusts.length?Math.max(...gusts):null})}
- box.classList.remove('hidden');box.innerHTML='<div class="detailhead">'+labelDate(dt,'long')+' · three-hour periods</div><div class="detailnote">Tap the day again to close. Rain chance is the highest hourly chance within each block, and mm is the sum for that block. Wind is at the shown time; gusts are the block maximum (both in km/h).</div><div class="detailrows">'+arr.map(x=>'<div class="detailcell'+(isPastDetailPeriod(x.at,now)?' past':'')+'" data-period="'+x.at+'"><strong>'+x.t+'</strong>'+icon(x.c,isDayAt(x.at,d),x.p,x.mm)+' '+fmt(x.temp)+'°<br>'+probability(x.p)+' rain<br>'+fmt(x.mm,1)+' mm<br>wind '+fmt(x.wind)+'<br>gust '+fmt(x.g)+'</div>').join('')+'</div>'+modelComparison(forecast,dt)}
+ for(let j=0;j<matches.length;j+=3){const ix=matches.slice(j,j+3),ps=ix.map(i=>hourValue(h,'precipitation_probability',i)).filter(Number.isFinite),gusts=ix.map(i=>hourValue(h,'wind_gusts_10m',i)).filter(Number.isFinite);let mm=sumValues(ix.map(i=>hourValue(h,'precipitation',i)));arr.push({t:h.time[ix[0]].slice(11,16),at:h.time[ix[0]],c:periodCode(h,ix),temp:h.temperature_2m?.[ix[0]],wind:h.wind_speed_10m?.[ix[0]],direction:h.wind_direction_10m?.[ix[0]],p:ps.length?Math.max(...ps):null,mm,g:gusts.length?Math.max(...gusts):null})}
+ box.classList.remove('hidden');box.innerHTML='<div class="detailhead">'+labelDate(dt,'long')+' · three-hour periods</div><div class="detailnote">Tap the day again to close. Rain chance is the highest hourly chance within each block, and mm is the sum for that block. Wind is at the shown time; gusts are the block maximum (both in km/h). Arrows point where the wind is blowing, with north ↑.</div><div class="detailrows">'+arr.map(x=>'<div class="detailcell'+(isPastDetailPeriod(x.at,now)?' past':'')+'" data-period="'+x.at+'"><strong>'+x.t+'</strong>'+icon(x.c,isDayAt(x.at,d),x.p,x.mm)+' '+fmt(x.temp)+'°<br>'+probability(x.p)+' rain<br>'+fmt(x.mm,1)+' mm<br><span class="detail-wind">wind '+fmt(x.wind)+windDirectionArrow(x.direction,x.wind)+'</span><br>gust '+fmt(x.g)+'</div>').join('')+'</div>'+modelComparison(forecast,dt)}
 function modelComparison(x,date){
  const entries=[['ECMWF IFS',x?.ecmwf],['ICON Europe',x?.icon],['GFS',x?.gfs]];
  const rows=entries.map(([name,data])=>{const i=data?.daily?.time?.indexOf(date)??-1;const mm=i>=0?data.daily.precipitation_sum?.[i]:null;return {name,mm:Number.isFinite(mm)?mm:null}});
