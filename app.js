@@ -1,7 +1,7 @@
 (() => {
 'use strict';
 const LAT=36.8243, LON=22.2811, ZONE='Europe/Athens', CACHE_KEY='mani-weather-live-v4', REFRESH_MS=10*60*1000;
-const mainFields={current:'temperature_2m,relative_humidity_2m,weather_code,is_day,precipitation,wind_speed_10m,wind_gusts_10m', hourly:'temperature_2m,relative_humidity_2m,weather_code,precipitation,precipitation_probability,wind_speed_10m,wind_direction_10m,wind_gusts_10m', daily:'weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,wind_gusts_10m_max,sunrise,sunset'};
+const mainFields={current:'temperature_2m,relative_humidity_2m,weather_code,is_day,precipitation,wind_speed_10m,wind_gusts_10m', hourly:'temperature_2m,relative_humidity_2m,weather_code,precipitation,precipitation_probability,wind_speed_10m,wind_direction_10m,wind_gusts_10m,cloud_cover', daily:'weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,wind_gusts_10m_max,sunrise,sunset'};
 const el=id=>document.getElementById(id);
 const fmt=(v,d=0)=>Number.isFinite(v)?Number(v).toFixed(d):'—';
 const probability=(v)=>Number.isFinite(v)?Math.round(v)+'%':'N/A';
@@ -116,7 +116,7 @@ function render(payloadData,{stale=false}={}){
  const age=ageMinutes<1?'less than a minute old':ageMinutes<60?ageMinutes+' minutes old':ageMinutes<1440?Math.floor(ageMinutes/60)+' hours old':Math.floor(ageMinutes/1440)+' days old';
  setStatus(stale?'Saved forecast · '+age+' · live update unavailable':'Forecast updated successfully',stale?'error':'');
  if(stale){risk.className='alert info';risk.innerHTML='<strong>Saved forecast · check the download date above</strong>Live conditions and hazard guidance could not be checked. Figures below may be out of date.';}
-
+ window.ManiMoon?.setForecast(payloadData,{stale});
  }
 // Detail cards cover three hours in the forecast's Greek local time.
 function isPastDetailPeriod(at,now=localISO()){
@@ -240,4 +240,3 @@ async function refresh(){if(updating)return;updating=true;const btn=el('refresh'
  const saved=safeLoad();if(saved){try{render(saved,{stale:true});payload=saved}catch(e){}}
  refresh();
 })();
-

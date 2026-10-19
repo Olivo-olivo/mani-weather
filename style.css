@@ -27,6 +27,32 @@
 .modelcompare .modelnote{color:#fff}
 
 .credit{text-align:center;color:#b7cfdd;font-size:11.5px;letter-spacing:.02em;padding:2px 8px 0}
+.moon-panel{margin:0 0 15px;border:1px solid #36546b;border-radius:18px;background:#10283b;font-size:12px;line-height:1.5;color:#b7cfdd}
+.moon-panel summary{list-style:none;cursor:pointer;display:grid;grid-template-columns:56px minmax(0,1fr);gap:12px;align-items:center;padding:14px}
+.moon-panel summary::-webkit-details-marker{display:none}
+.moon-panel summary:focus-visible{outline:2px solid #a7dfff;outline-offset:3px;border-radius:18px}
+.moon-graphic{display:flex;align-items:center;justify-content:center;font-size:40px;color:#eee7cf}
+.moon-graphic svg{display:block;flex:none}
+.moon-summary-copy{display:block;min-width:0}
+.moon-heading{display:flex;align-items:center;justify-content:space-between;color:#e5f5fb;font-size:14px;font-weight:750}
+.moon-toggle{font-size:18px;color:#8eadbf;line-height:1;transition:transform .15s}
+.moon-panel[open] .moon-toggle{transform:rotate(180deg)}
+.moon-phase{display:flex;flex-wrap:wrap;gap:1px 9px;margin:3px 0 5px}
+#moonPhase{color:#d7e8ef}
+#moonIllumination{color:#91b1c3}
+.moon-times{display:flex;flex-wrap:wrap;gap:2px 16px;font-size:11.5px}
+.moon-times b{font-weight:550;color:#d7e8ef;font-variant-numeric:tabular-nums}
+.moon-hint{display:block;margin-top:5px;font-size:10.5px;color:#8eadbf}
+.moon-body{border-top:1px solid #36546b;padding:13px 14px 5px}
+.moon-night{font-size:11px;color:#8eadbf;margin-bottom:8px}
+.moon-body strong{color:#d7e8ef;font-size:12px}
+.moon-body p{margin:8px 0 12px}
+.moon-outlook{color:#e5f5fb}
+.moon-hours{display:grid;grid-template-columns:repeat(auto-fit,minmax(105px,1fr));gap:6px}
+.moon-hour{display:flex;flex-direction:column;gap:3px;background:#1c3b50;border-radius:10px;padding:9px 7px;text-align:center;font-size:11px}
+.moon-hour time{font-weight:700;color:#e5f5fb;font-variant-numeric:tabular-nums}
+.moon-note{font-size:10.5px;line-height:1.55;color:#8eadbf}
+.moon-note a{color:#9dbed0}
 
 
 /* Optional recent radar panel; forecasts above and below are unchanged. */

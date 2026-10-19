@@ -12,7 +12,7 @@
 <link rel="icon" type="image/svg+xml" href="./icon.svg">
 <link rel="apple-touch-icon" href="./icons/icon-192.png">
 <title>Mani Weather · Agios Nikolaos Area</title>
-<link rel="stylesheet" href="./style.css?v=24">
+<link rel="stylesheet" href="./style.css?v=25">
 </head>
 <body>
 <div class="wrap">
@@ -49,9 +49,31 @@
 </main>
 <footer class="footer">Forecast for the Agios Nikolaos village area · Data: <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo</a> (CC BY 4.0). Model output may differ from weather measured at your property. Weather risk notices here are automated estimates, <strong>not official alerts</strong>. Visit <a href="https://www.emy.gr/" target="_blank" rel="noopener noreferrer">EMY</a> for official Greek warnings.
 <div class="links"><a href="https://w2.meteo.gr/cf.cfm?city_id=242" target="_blank" rel="noopener noreferrer" >Nearby Kardamyli observations ↗</a><a href="https://open-meteo.com/en/docs" target="_blank" rel="noopener noreferrer">Forecast methodology ↗</a></div></footer>
+<details id="moonPanel" class="moon-panel">
+<summary>
+<span id="moonGraphic" class="moon-graphic" aria-hidden="true">☾</span>
+<span class="moon-summary-copy">
+<span class="moon-heading">Moon tonight <span class="moon-toggle" aria-hidden="true">⌄</span></span>
+<span class="moon-phase"><span id="moonPhase">Calculating…</span><span id="moonIllumination"></span></span>
+<span class="moon-times"><span>Rise <b id="moonRise">—</b></span><span>Set <b id="moonSet">—</b></span></span>
+<span class="moon-hint">Tap for viewing outlook</span>
+</span>
+</summary>
+<div class="moon-body">
+<div id="moonNightLabel" class="moon-night"></div>
+<strong id="moonNow"></strong>
+<p id="moonWindow"></p>
+<p id="moonOutlook" class="moon-outlook"></p>
+<div id="moonHours" class="moon-hours"></div>
+<p id="moonPhaseTime" class="moon-note"></p>
+<p class="moon-note">Viewing guidance uses forecast cloud cover and an unobstructed horizon. Hills, buildings and haze may affect visibility. Illumination describes the lit part of the Moon, not the chance of seeing it.</p>
+<p class="moon-note">Astronomy: <a href="https://github.com/cosinekitty/astronomy" target="_blank" rel="noopener noreferrer">Astronomy Engine</a> · Clouds: Open-Meteo.</p>
+</div>
+</details>
 <div class="credit">Prepared by Aykut Turhan and Sol</div>
 </div>
-<script src="./app.js?v=26" defer></script>
+<script src="./vendor/astronomy-2.1.19.min.js" defer></script>
+<script src="./moon.js?v=1" defer></script>
+<script src="./app.js?v=27" defer></script>
 <script src="./pwa.js?v=1" defer></script>
 </body></html>
-
