@@ -16,7 +16,7 @@
     }
     if (/Android/i.test(ua)) {
       if (/Firefox/i.test(ua)) {
-        return 'In Firefox, open the browser menu (⋮) and choose Install or Add to Home screen. If the option is unavailable, try Chrome.';
+        return 'In Firefox, open the browser menu (⋮) and choose Install or Add app to Home screen. If the option is unavailable, try Chrome.';
       }
       return 'Open your browser menu (⋮) and choose Install app or Add to Home screen.';
     }
