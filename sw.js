@@ -1,6 +1,6 @@
 'use strict';
-const CACHE = 'mani-weather-shell-v30';
-const ASSETS = ['./', './index.html', './style.css?v=26', './app.js?v=27', './moon.js?v=1', './vendor/astronomy-2.1.19.min.js', './pwa.js?v=1', './manifest.webmanifest', './icon.svg', './night-partly-cloudy.svg', './icons/icon-192.png', './icons/icon-512.png', './icons/maskable-512.png'];
+const CACHE = 'mani-weather-shell-v31';
+const ASSETS = ['./', './index.html', './style.css?v=27', './app.js?v=27', './moon.js?v=1', './vendor/astronomy-2.1.19.min.js', './pwa.js?v=2', './manifest.webmanifest', './icon.svg', './night-partly-cloudy.svg', './icons/icon-192.png', './icons/icon-512.png', './icons/maskable-512.png'];
 const assetURLs = new Set(ASSETS.map(path => new URL(path, self.registration.scope).href));
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)).then(() => self.skipWaiting()));

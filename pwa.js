@@ -1,32 +1,78 @@
 (() => {
   'use strict';
   const button = document.getElementById('installApp');
+  const help = document.getElementById('installHelp');
   const status = document.getElementById('installStatus');
   const standalone = window.matchMedia('(display-mode: standalone)');
   let installPrompt = null;
+
+  const isInstalled = () => standalone.matches || navigator.standalone === true;
+  const installInstructions = () => {
+    const ua = navigator.userAgent;
+    const ios = /iPhone|iPad|iPod/i.test(ua) ||
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    if (ios) {
+      return 'On iPhone or iPad, tap Share (the square with an upward arrow), then Add to Home Screen and Add. If you cannot find that option, open this page in Safari.';
+    }
+    if (/Android/i.test(ua)) {
+      if (/Firefox/i.test(ua)) {
+        return 'In Firefox, open the browser menu (⋮) and choose Install or Add to Home screen. If the option is unavailable, try Chrome.';
+      }
+      return 'Open your browser menu (⋮) and choose Install app or Add to Home screen.';
+    }
+    return 'Open your browser menu and choose Install app if available. On iPhone, use Share → Add to Home Screen in Safari.';
+  };
+  const showHelp = () => {
+    help.textContent = installInstructions();
+    help.hidden = false;
+    button.setAttribute('aria-expanded', 'true');
+  };
+  const hideHelp = () => {
+    help.hidden = true;
+    button.setAttribute('aria-expanded', 'false');
+  };
+
+  button.hidden = isInstalled();
   window.addEventListener('beforeinstallprompt', event => {
     event.preventDefault();
     installPrompt = event;
-    button.hidden = standalone.matches;
+    button.hidden = isInstalled();
   });
   button.addEventListener('click', async () => {
-    if (!installPrompt) return;
-    const prompt = installPrompt;
-    installPrompt = null;
-    button.hidden = true;
-    try {
-      await prompt.prompt();
-      const choice = await prompt.userChoice;
-      status.textContent = choice.outcome === 'accepted' ? 'Installation requested · follow your phone’s prompts.' : '';
-    } catch (_) {
-      status.textContent = 'Open Chrome’s menu and choose Install app or Add to Home screen.';
+    status.textContent = '';
+    if (installPrompt) {
+      const promptEvent = installPrompt;
+      installPrompt = null;
+      try {
+        await promptEvent.prompt();
+        const choice = await promptEvent.userChoice;
+        if (choice.outcome === 'accepted') {
+          button.hidden = true;
+          hideHelp();
+          status.textContent = 'Installation requested. Look for Mani Weather on your home screen.';
+        } else {
+          showHelp();
+        }
+      } catch (_) {
+        showHelp();
+      }
+    } else if (help.hidden) {
+      showHelp();
+    } else {
+      hideHelp();
     }
   });
   window.addEventListener('appinstalled', () => {
     installPrompt = null;
     button.hidden = true;
-    status.textContent = 'Mani Weather installed';
+    hideHelp();
+    status.textContent = 'Mani Weather installed. Open it from your home screen.';
   });
+  standalone.addEventListener?.('change', () => {
+    button.hidden = isInstalled();
+    if (isInstalled()) hideHelp();
+  });
+
   if ('serviceWorker' in navigator && window.isSecureContext) {
     let controlled = !!navigator.serviceWorker.controller;
     let reloading = false;
