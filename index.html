@@ -12,7 +12,7 @@
 <link rel="icon" type="image/svg+xml" href="./icon.svg">
 <link rel="apple-touch-icon" href="./icons/icon-192.png">
 <title>Mani Weather · Agios Nikolaos Area</title>
-<link rel="stylesheet" href="./style.css?v=27">
+<link rel="stylesheet" href="./style.css?v=28">
 </head>
 <body>
 <div class="wrap">
@@ -21,6 +21,7 @@
 <div id="status" class="status"><span class="dot busy"></span><span>Loading the latest forecast</span></div>
 <section class="hero" aria-label="Current model-based weather"><div id="icon" class="weather-icon">⛅</div><div id="temp" class="temperature measure">—°</div><div class="hero-info"><div id="cond" class="condition">Loading…</div><div id="today">High —° · Low —°</div><div id="wind">Wind — · gust — km/h</div><div id="humidity">Humidity —%</div><div id="at" class="muted">Model estimate, not station observation</div></div></section>
 <section class="pills" aria-label="Today's forecast summary"><div class="pill"><div class="val measure" id="chance">—%</div><div class="label">Highest hourly rain chance remaining today</div></div><div class="pill"><div class="val measure" id="rain">— mm</div><div class="label">Rain today (forecast)</div></div><div class="pill"><div class="val measure" id="maxgust">— km/h</div><div class="label">Peak gust forecast today</div></div></section>
+<div id="rainCrossCheck" class="rain-crosscheck hidden" role="status" aria-live="polite"></div>
 <div id="risk" class="alert info" role="status" aria-live="polite"><strong>Checking conditions</strong>Analyzing the next 12 hours for rain and wind.</div>
 <details id="radarPanel" class="radar-panel">
 <summary>Recent rain radar <span class="radar-beta">BETA · tap to view</span></summary>
@@ -78,6 +79,7 @@
 </div>
 <script src="./vendor/astronomy-2.1.19.min.js" defer></script>
 <script src="./moon.js?v=1" defer></script>
-<script src="./app.js?v=27" defer></script>
+<script src="./app.js?v=28" defer></script>
 <script src="./pwa.js?v=3" defer></script>
 </body></html>
+

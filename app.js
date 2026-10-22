@@ -58,7 +58,35 @@ function buildUrl(model,fields){const u=new URL('https://api.open-meteo.com/v1/f
 async function request(url){const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),14000);try{const r=await fetch(url,{signal:ctl.signal,cache:'no-store'});if(!r.ok)throw Error('Forecast API returned '+r.status);const a=await r.json();if(a.error)throw Error(a.reason||'Forecast provider error');return a}finally{clearTimeout(timer)}}
 function safeSave(payload){try{localStorage.setItem(CACHE_KEY,JSON.stringify(payload))}catch(e){}}
 function safeLoad(){try{const x=JSON.parse(localStorage.getItem(CACHE_KEY)||'null');return x&&x.data&&Number.isFinite(Date.parse(x.savedAt))?x:null}catch(e){return null}}
-let payload=null,selectedDay=-1,updating=false;
+let payload=null,selectedDay=-1,updating=false,forecastStale=true;
+function rainCrossCheck(forecast,now=localISO()){
+ const h=forecast?.data?.hourly,start=now.slice(0,13)+':00';
+ const first=h?.time?.indexOf(start)??-1;
+ if(first<0||first+3>=h.time.length)return null;
+ // Match the same three hour-END timestamps in every feed, including midnight.
+ // This retains the ongoing hour and excludes all completed hourly periods.
+ const ends=h.time.slice(first+1,first+4);
+ const mainRain=ends.map((_,j)=>h.precipitation?.[first+j+1]);
+ const mainChance=ends.map((_,j)=>h.precipitation_probability?.[first+j+1]);
+ if(!mainRain.every(v=>Number.isFinite(v)&&v===0)||
+    !mainChance.every(v=>Number.isFinite(v)&&v>=0&&v<=20))return null;
+ // 20% only controls when to display the note; probabilities are never altered.
+ const wet=[];
+ for(const [name,data] of [['ICON Europe',forecast.icon],['ECMWF IFS',forecast.ecmwf],['GFS',forecast.gfs]]){
+  const other=data?.hourly;
+  const amounts=ends.map(t=>{const i=other?.time?.indexOf(t)??-1;return i<0?null:other.precipitation?.[i];});
+  if(amounts.every(v=>Number.isFinite(v)&&v>=0)&&amounts.some(v=>v>=0.1))wet.push(name);
+ }
+ return wet.length?{models:wet,end:ends[2]}:null;
+}
+function updateRainCrossCheck(forecast,{stale=false}={}){
+ const box=el('rainCrossCheck');if(!box)return;
+ const saved=Date.parse(forecast?.savedAt),age=Date.now()-saved;
+ const fresh=!stale&&navigator.onLine!==false&&Number.isFinite(saved)&&age>=-300000&&age<=30*60000;
+ const signal=fresh?rainCrossCheck(forecast):null;
+ box.classList.toggle('hidden',!signal);
+ box.textContent=signal?'Rain possible in the next few hours · '+signal.models.join(', ')+(signal.models.length===1?' forecasts':' forecast')+' rainfall despite a dry main forecast.':'';
+}
 function setStatus(message,style){el('status').innerHTML='<span class="dot '+(style||'')+'"></span><span>'+message+'</span>'}
 function modelAtCurrent(hourly,current){if(!hourly?.time?.length)return null;const point=current?.time||localISO();let best=null;for(let i=0;i<hourly.time.length;i++){if(hourly.time[i]<=point)best=i;else break}return best}
 function wetCode(code){return Number.isFinite(code)&&((code>=51&&code<=86)||(code>=95&&code<=99));}
@@ -81,6 +109,7 @@ function nextHourIndex(hourly){const t=localISO().slice(0,13)+':00';let idx=hour
 function render(payloadData,{stale=false}={}){
  const a=payloadData.data, d=a.daily, h=a.hourly, c=a.current||{};
  if(!d?.time?.length||!h?.time?.length||d.time.length<5)throw Error('Incomplete forecast data');
+ forecastStale=stale;updateRainCrossCheck(payloadData,{stale});
  const dateToday=localISO().slice(0,10), todayIndex=d.time.indexOf(dateToday), dayIndex=todayIndex>=0?todayIndex:0;
  const usableC=Number.isFinite(c.temperature_2m),hi=modelAtCurrent(h,c),temperature=usableC?c.temperature_2m:h.temperature_2m?.[hi],summary=currentSummary(c,h,d);
  el('icon').innerHTML=summary.glyph;el('temp').textContent=fmt(temperature)+'°';el('cond').textContent=summary.text;
@@ -229,14 +258,16 @@ el('radarNext').addEventListener('click',()=>{if(radarIndex<radarFrames.length-1
 setInterval(()=>{if(!document.hidden&&el('radarPanel').open)refreshRadar()},2*60*1000);
 
 async function refresh(){if(updating)return;updating=true;const btn=el('refresh');btn.disabled=true;btn.innerHTML='<span class="spin">↻</span>';el('error').classList.add('hidden');setStatus('Checking current forecast…','busy');
- try{if(navigator.onLine===false)throw Error('device is offline');const f=await Promise.allSettled([request(buildUrl('best_match',mainFields)),request(buildUrl('icon_eu',{daily:'precipitation_sum'})),request(buildUrl('ecmwf_ifs025',{daily:'precipitation_sum'})),request(buildUrl('gfs_global',{daily:'precipitation_sum'}))]);if(f[0].status!=='fulfilled')throw f[0].reason||Error('Forecast service unavailable');const a=f[0].value;if(!a.daily?.time||!a.hourly?.time)throw Error('Incomplete forecast data');
+ try{if(navigator.onLine===false)throw Error('device is offline');const comparisonFields={daily:'precipitation_sum',hourly:'precipitation'};const f=await Promise.allSettled([request(buildUrl('best_match',mainFields)),request(buildUrl('icon_eu',comparisonFields)),request(buildUrl('ecmwf_ifs025',comparisonFields)),request(buildUrl('gfs_global',comparisonFields))]);if(f[0].status!=='fulfilled')throw f[0].reason||Error('Forecast service unavailable');const a=f[0].value;if(!a.daily?.time||!a.hourly?.time)throw Error('Incomplete forecast data');
  const next={data:a,icon:f[1].status==='fulfilled'?f[1].value:null,ecmwf:f[2].status==='fulfilled'?f[2].value:null,gfs:f[3].status==='fulfilled'?f[3].value:null,savedAt:new Date().toISOString()};render(next);payload=next;safeSave(payload);}
  catch(err){const cached=safeLoad()||payload;if(cached){try{payload=cached;render(payload,{stale:true})}catch(e){setStatus('Weather data unavailable','error')}}else{setStatus('Unable to connect to weather service','error');el('stamp').textContent='Could not retrieve live data';}el('error').textContent='Live forecast not available: '+(err.name==='AbortError'?'connection timed out':(err.message||'network error'))+'. '+(cached?'Displaying saved data, which may be outdated.':'Check connectivity and press refresh.');el('error').classList.remove('hidden');}
  finally{updating=false;btn.disabled=false;btn.textContent='↻'}}
  el('refresh').addEventListener('click',()=>{refresh();refreshRadar(true)});
- document.addEventListener('visibilitychange',()=>{if(!document.hidden){updatePastDetailPeriods();if(!payload||Date.now()-Date.parse(payload.savedAt)>=REFRESH_MS)refresh()}});
- setInterval(()=>{if(document.hidden)return;updatePastDetailPeriods();if(payload)el('chance').textContent=probability(remainingDayProbability(payload.data.hourly));if(!payload||Date.now()-Date.parse(payload.savedAt)>=REFRESH_MS)refresh()},60*1000);
+ document.addEventListener('visibilitychange',()=>{if(!document.hidden){updatePastDetailPeriods();updateRainCrossCheck(payload,{stale:forecastStale});if(!payload||Date.now()-Date.parse(payload.savedAt)>=REFRESH_MS)refresh()}});
+ setInterval(()=>{if(document.hidden)return;updatePastDetailPeriods();if(payload)el('chance').textContent=probability(remainingDayProbability(payload.data.hourly));updateRainCrossCheck(payload,{stale:forecastStale});if(!payload||Date.now()-Date.parse(payload.savedAt)>=REFRESH_MS)refresh()},60*1000);
+ window.addEventListener('offline',()=>{forecastStale=true;updateRainCrossCheck(payload,{stale:true});});
  window.addEventListener('online',()=>{refresh();refreshRadar(true)});
  const saved=safeLoad();if(saved){try{render(saved,{stale:true});payload=saved}catch(e){}}
  refresh();
 })();
+
