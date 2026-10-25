@@ -1,6 +1,6 @@
 'use strict';
-const CACHE = 'mani-weather-shell-v35';
-const ASSETS = ['./', './index.html', './style.css?v=28', './app.js?v=30', './moon.js?v=1', './vendor/astronomy-2.1.19.min.js', './pwa.js?v=3', './manifest.webmanifest', './icon.svg', './night-partly-cloudy.svg', './icons/icon-192.png', './icons/icon-512.png', './icons/maskable-512.png'];
+const CACHE = 'mani-weather-shell-v36';
+const ASSETS = ['./', './index.html', './style.css?v=28', './app.js?v=31', './moon.js?v=1', './vendor/astronomy-2.1.19.min.js', './pwa.js?v=3', './manifest.webmanifest', './icon.svg', './night-partly-cloudy.svg', './icons/icon-192.png', './icons/icon-512.png', './icons/maskable-512.png'];
 const assetURLs = new Set(ASSETS.map(path => new URL(path, self.registration.scope).href));
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)).then(() => self.skipWaiting()));
@@ -30,5 +30,6 @@ self.addEventListener('fetch', event => {
     } finally { clearTimeout(timer); }
   })());
 });
+
 
 

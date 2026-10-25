@@ -25,8 +25,9 @@
 <div id="rainCrossCheck" class="rain-crosscheck hidden" role="status" aria-live="polite"></div>
 <div id="risk" class="alert info" role="status" aria-live="polite"><strong>Checking conditions</strong>Analyzing the next 12 hours for rain and wind.</div>
 <details id="radarPanel" class="radar-panel">
-<summary>Recent rain radar <span class="radar-beta">BETA · tap to view</span></summary>
+<summary>Recent rain radar <span class="radar-beta">LOCAL GAPS · tap to view</span></summary>
 <div class="radar-body">
+<p class="radar-status"><strong>Rain around Agios Nikolaos may be missing from this map. A clear map does not mean dry weather.</strong></p>
 <div id="radarStatus" class="radar-status" role="status" aria-live="polite">Open to load recent radar imagery.</div>
 <div id="radarMap" class="radar-map hidden">
 <div id="radarBasemap" class="radar-basemap" aria-hidden="true"></div>
@@ -37,7 +38,7 @@
 <a class="radar-attribution" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">© OpenStreetMap contributors</a>
 </div>
 <div class="radar-controls"><button id="radarPrev" type="button" disabled aria-label="Older radar frame">← Earlier</button><span id="radarFrameTime">—</span><button id="radarNext" type="button" disabled aria-label="Newer radar frame">Later →</button></div>
-<p class="radar-note">Radar colours indicate precipitation intensity: blue shows lighter echoes; yellow and orange show heavier echoes. An echo does not necessarily mean rain at your property, and no echo may reflect missing coverage. Radar images may lag actual conditions and are not forecasts. Data: <a href="https://www.rainviewer.com/" target="_blank" rel="noopener noreferrer">RainViewer ↗</a></p>
+<p class="radar-note">Radar colours indicate precipitation intensity: blue shows lighter echoes; yellow and orange show heavier echoes. An echo does not necessarily mean rain at your property. The time shown dates the assembled regional map; local radar readings may be older or missing even when the map updates. These images are not forecasts. Data: <a href="https://www.rainviewer.com/" target="_blank" rel="noopener noreferrer">RainViewer ↗</a></p>
 </div>
 </details>
 <div class="sectionline"><span class="sectiontitle">Next 12 hours</span><span class="sectionhint">Two-hour blocks</span></div>
@@ -82,8 +83,9 @@
 </div>
 <script src="./vendor/astronomy-2.1.19.min.js" defer></script>
 <script src="./moon.js?v=1" defer></script>
-<script src="./app.js?v=30" defer></script>
+<script src="./app.js?v=31" defer></script>
 <script src="./pwa.js?v=3" defer></script>
 </body></html>
+
 
 

@@ -245,8 +245,8 @@ function showRadarFrame(){
  const age=Math.round((Date.now()-frame.time*1000)/60000);
  el('radarPrev').disabled=radarIndex===0;
  el('radarNext').disabled=radarIndex===radarFrames.length-1;
- el('radarFrameTime').textContent=radarClock(frame.time)+' Greek time';
- el('radarStatus').textContent='Radar image about '+Math.max(0,age)+' minutes old · not a live observation at your property.';
+ el('radarFrameTime').textContent='Map '+radarClock(frame.time)+' Greek time';
+ el('radarStatus').textContent='Regional map assembled about '+Math.max(0,age)+' minutes ago · local readings may be older or missing.';
  const img=el('radarImage');
  el('radarMap').classList.add('hidden');
  img.onload=()=>{el('radarMap').classList.remove('hidden');ensureRadarBaseMap();};
@@ -287,12 +287,13 @@ async function refresh(){if(updating)return;updating=true;const btn=el('refresh'
  catch(err){const cached=safeLoad()||payload;if(cached){try{payload=cached;render(payload,{stale:true})}catch(e){setStatus('Weather data unavailable','error')}}else{setStatus('Unable to connect to weather service','error');el('stamp').textContent='Could not retrieve live data';}el('error').textContent='Live forecast not available: '+(err.name==='AbortError'?'connection timed out':(err.message||'network error'))+'. '+(cached?'Displaying saved data, which may be outdated.':'Check connectivity and press refresh.');el('error').classList.remove('hidden');}
  finally{updating=false;btn.disabled=false;btn.textContent='↻'}}
  el('refresh').addEventListener('click',()=>{refresh();refreshRadar(true)});
- document.addEventListener('visibilitychange',()=>{if(!document.hidden){updatePastDetailPeriods();updateMainRainChance(payload);updateRainCrossCheck(payload,{stale:forecastStale});if(!payload||Date.now()-Date.parse(payload.savedAt)>=REFRESH_MS)refresh()}});
+ document.addEventListener('visibilitychange',()=>{if(!document.hidden){refreshRadar();updatePastDetailPeriods();updateMainRainChance(payload);updateRainCrossCheck(payload,{stale:forecastStale});if(!payload||Date.now()-Date.parse(payload.savedAt)>=REFRESH_MS)refresh()}});
  setInterval(()=>{if(document.hidden)return;updatePastDetailPeriods();updateMainRainChance(payload);updateRainCrossCheck(payload,{stale:forecastStale});if(!payload||Date.now()-Date.parse(payload.savedAt)>=REFRESH_MS)refresh()},60*1000);
  window.addEventListener('offline',()=>{forecastStale=true;updateRainCrossCheck(payload,{stale:true});});
  window.addEventListener('online',()=>{refresh();refreshRadar(true)});
  const saved=safeLoad();if(saved){try{render(saved,{stale:true});payload=saved}catch(e){}}
  refresh();
 })();
+
 
 
