@@ -1,6 +1,6 @@
 'use strict';
-const CACHE = 'mani-weather-shell-v36';
-const ASSETS = ['./', './index.html', './style.css?v=28', './app.js?v=31', './moon.js?v=1', './vendor/astronomy-2.1.19.min.js', './pwa.js?v=3', './manifest.webmanifest', './icon.svg', './night-partly-cloudy.svg', './icons/icon-192.png', './icons/icon-512.png', './icons/maskable-512.png'];
+const CACHE = 'mani-weather-shell-v37';
+const ASSETS = ['./', './index.html', './style.css?v=29', './app.js?v=32', './moon.js?v=1', './vendor/astronomy-2.1.19.min.js', './pwa.js?v=3', './manifest.webmanifest', './icon.svg', './night-partly-cloudy.svg', './icons/icon-192.png', './icons/icon-512.png', './icons/maskable-512.png'];
 const assetURLs = new Set(ASSETS.map(path => new URL(path, self.registration.scope).href));
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)).then(() => self.skipWaiting()));
@@ -13,7 +13,7 @@ self.addEventListener('fetch', event => {
   const url = new URL(request.url);
   const scope = new URL(self.registration.scope);
   if (request.method !== 'GET' || url.origin !== scope.origin || !url.pathname.startsWith(scope.pathname)) return;
-  // Forecasts and radar bypass this cache; the app dates its saved forecast explicitly.
+  // Forecast requests bypass this cache; the app dates its saved forecast explicitly.
   const navigation = request.mode === 'navigate';
   if (!navigation && !assetURLs.has(url.href)) return;
   event.respondWith((async () => {
@@ -30,6 +30,7 @@ self.addEventListener('fetch', event => {
     } finally { clearTimeout(timer); }
   })());
 });
+
 
 
 
