@@ -98,11 +98,11 @@ function currentSummary(c,h,d){
  const chance=sameHour?hourValue(h,'precipitation_probability',i):null;
  const day=c.is_day===0?false:c.is_day===1?true:isDayAt(at,d);
  const code=Number.isFinite(c.weather_code)?c.weather_code:hourlyCode;
- if(wetCode(code))return {glyph:icon(code,day),text:description(code)};
- if(Number.isFinite(c.precipitation)&&c.precipitation>0)return {glyph:'🌧️',text:'Rain or drizzle'};
+ if(wetCode(code))return {glyph:icon(code,day),text:description(code),precipitation:true};
+ if(Number.isFinite(c.precipitation)&&c.precipitation>0)return {glyph:'🌧️',text:'Rain or drizzle',precipitation:true};
  // An hourly prediction is guidance for the hour, not an observation of rain now.
- if(wetCode(hourlyCode))return {glyph:icon(hourlyCode,day),text:hourlyCode>=95?'Thunderstorms possible this hour':description(hourlyCode)+' forecast this hour'};
- if(Number.isFinite(chance)&&chance>=40)return {glyph:icon(code,day,chance),text:chance>=60?'Rain likely this hour':'Rain possible this hour'};
+ if(wetCode(hourlyCode))return {glyph:icon(hourlyCode,day),text:hourlyCode>=95?'Thunderstorms possible this hour':description(hourlyCode)+' forecast this hour',precipitation:true};
+ if(Number.isFinite(chance)&&chance>=40)return {glyph:icon(code,day,chance),text:chance>=60?'Rain likely this hour':'Rain possible this hour',precipitation:true};
  return {glyph:icon(code,day),text:description(code)};
 }
 function nextHourIndex(hourly){const t=localISO().slice(0,13)+':00';let idx=hourly.time.findIndex(x=>x>=t);return idx<0?hourly.time.length:idx}
@@ -118,7 +118,7 @@ function render(payloadData,{stale=false}={}){
  const humidityAt=c.time||localISO(),humidity=Number.isFinite(c.relative_humidity_2m)?c.relative_humidity_2m:hi!==null&&h.time[hi].slice(0,13)===humidityAt.slice(0,13)?h.relative_humidity_2m?.[hi]:null;
  el('humidity').textContent='Humidity '+fmt(humidity)+'%';
  el('at').textContent='Model estimate '+(c.time?.replace('T',' ')||'—')+' · not a station reading';
- el('rain').textContent=fmt(d.precipitation_sum?.[dayIndex],1)+' mm';el('chance').textContent=probability(remainingDayProbability(h));el('maxgust').textContent=fmt(d.wind_gusts_10m_max?.[dayIndex])+' km/h';
+ el('rain').textContent=fmt(d.precipitation_sum?.[dayIndex],1)+' mm';updateMainRainChance(payloadData,summary);el('maxgust').textContent=fmt(d.wind_gusts_10m_max?.[dayIndex])+' km/h';
  const nowIdx=nextHourIndex(h), hours=[];
  for(let i=nowIdx;i<Math.min(nowIdx+12,h.time.length);i++)hours.push(i);
  const vals=(key)=>hours.map(i=>key==='weather_code'?h[key]?.[i]:hourValue(h,key,i)).filter(Number.isFinite);
@@ -135,8 +135,10 @@ function render(payloadData,{stale=false}={}){
  
  const group=[];for(let j=0;j<hours.length;j+=2){const ids=hours.slice(j,j+2);if(!ids.length)continue;const first=ids[0];const accum=sumValues(ids.map(i=>hourValue(h,'precipitation',i)));const per=ids.map(i=>hourValue(h,'precipitation_probability',i)).filter(Number.isFinite);const gp=per.length?Math.max(...per):null;
  group.push({time:h.time[first].slice(11,16),at:h.time[first],temp:h.temperature_2m?.[first],code:periodCode(h,ids),mm:accum,prob:gp})}
- el('hours').innerHTML=group.map(x=>'<div class="hour"><time>'+x.time+'</time><span class="glyph">'+icon(x.code,isDayAt(x.at,d),x.prob,x.mm)+'</span><div class="htemp">'+fmt(x.temp)+'°</div><div class="hprob">'+probability(x.prob)+'</div><div class="hmm">'+fmt(x.mm,1)+'mm</div></div>').join('')||'<div>Hourly forecast unavailable</div>';
- el('days').innerHTML=d.time.slice(0,5).map((date,i)=>'<tr data-day="'+i+'" tabindex="0" role="button" aria-expanded="'+(i===selectedDay)+'" aria-controls="detail" aria-label="See '+labelDate(date)+' hourly details"><td><span class="symbol">'+icon(d.weather_code?.[i],true,dayProbability(d,h,i),d.precipitation_sum?.[i])+'</span>'+labelDate(date).split(',')[0]+'</td><td>'+fmt(d.temperature_2m_max?.[i])+'° / '+fmt(d.temperature_2m_min?.[i])+'°</td><td>'+probability(dayProbability(d,h,i))+' <span class="small">· '+fmt(d.precipitation_sum?.[i],1)+'mm</span></td><td>'+fmt(d.wind_gusts_10m_max?.[i])+'</td></tr>').join('');
+ el('hours').innerHTML=group.map(x=>'<div class="hour"><time>'+x.time+'</time><span class="glyph">'+icon(x.code,isDayAt(x.at,d),x.prob,x.mm)+'</span><div class="htemp">'+fmt(x.temp)+'°</div><div class="hprob">'+probability(x.prob)+rainConflictMarker({p:x.prob,c:x.code,mm:x.mm},'hoursRainConflict')+'</div><div class="hmm">'+fmt(x.mm,1)+'mm</div></div>').join('')||'<div>Hourly forecast unavailable</div>';
+ setRainConflictNote('hoursRainConflict',group.some(x=>rainConflict({p:x.prob,c:x.code,mm:x.mm})));
+ el('days').innerHTML=d.time.slice(0,5).map((date,i)=>'<tr data-day="'+i+'" tabindex="0" role="button" aria-expanded="'+(i===selectedDay)+'" aria-controls="detail" aria-label="See '+labelDate(date)+' hourly details"><td><span class="symbol">'+icon(d.weather_code?.[i],true,dayProbability(d,h,i),d.precipitation_sum?.[i])+'</span>'+labelDate(date).split(',')[0]+'</td><td>'+fmt(d.temperature_2m_max?.[i])+'° / '+fmt(d.temperature_2m_min?.[i])+'°</td><td>'+probability(dayProbability(d,h,i))+rainConflictMarker({p:dayProbability(d,h,i),c:d.weather_code?.[i],mm:d.precipitation_sum?.[i]},'daysRainConflict')+' <span class="small">· '+fmt(d.precipitation_sum?.[i],1)+'mm</span></td><td>'+fmt(d.wind_gusts_10m_max?.[i])+'</td></tr>').join('');
+ setRainConflictNote('daysRainConflict',d.time.slice(0,5).some((_,i)=>rainConflict({p:dayProbability(d,h,i),c:d.weather_code?.[i],mm:d.precipitation_sum?.[i]})));
  el('days').querySelectorAll('tr[data-day]').forEach(row=>{const click=()=>{const x=Number(row.dataset.day);selectedDay=x===selectedDay?-1:x;renderDetail(d,h,payloadData);el('days').querySelectorAll('tr[data-day]').forEach(y=>y.setAttribute('aria-expanded',y.dataset.day===String(selectedDay)?'true':'false'))};row.addEventListener('click',click);row.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();click()}})});
  renderDetail(d,h,payloadData);
  const fetched=new Date(payloadData.savedAt), stamp=athensClock.format(fetched);
@@ -164,13 +166,30 @@ function windDirectionArrow(degrees,speed){
  return '<span class="wind-direction" role="img" aria-label="'+label+'" title="'+label+'"><svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true" focusable="false"><path transform="rotate('+heading+' 12 12)" d="M12 2 19 10H14V22H10V10H5Z" fill="currentColor"/></svg></span>';
 }
 // Explain conflicting forecast signals without changing the supplied probability or icon.
-function detailRainConflict(x){
- return Number.isFinite(x.p)&&x.p>=0&&Math.round(x.p)===0&&
-  (wetCode(x.c)||(Number.isFinite(x.mm)&&x.mm>0));
+const RAIN_CONFLICT_NOTE='* Forecast signals disagree: the rainfall amount or weather symbol indicates precipitation despite a displayed 0% rain chance.';
+function displayedZeroChance(p){return Number.isFinite(p)&&p>=0&&Math.round(p)===0;}
+function rainConflict(x){
+ return displayedZeroChance(x.p)&&(wetCode(x.c)||(Number.isFinite(x.mm)&&x.mm>0));
+}
+function rainConflictMarker(x,noteId){
+ return rainConflict(x)?'<span aria-describedby="'+noteId+'">*</span>':'';
+}
+function setRainConflictNote(id,show,message=RAIN_CONFLICT_NOTE){
+ const note=el(id);if(!note)return;
+ note.classList.toggle('hidden',!show);note.textContent=show?message:'';
+}
+function updateMainRainChance(forecast,summary){
+ if(!forecast?.data)return;
+ const {hourly:h,daily:d}=forecast.data,c=forecast.data.current||{};
+ // Use the same timestamp-aware summary as the displayed icon, including saved data.
+ const current=summary||currentSummary(c,h,d),p=remainingDayProbability(h);
+ const conflict=displayedZeroChance(p)&&current.precipitation===true;
+ el('chance').innerHTML=probability(p)+(conflict?'<span aria-describedby="mainRainConflict">*</span>':'');
+ setRainConflictNote('mainRainConflict',conflict,'* Current or hourly model data indicate precipitation, although the highest hourly rain chance remaining today displays 0%. These signals cover different periods and can disagree.');
 }
 function renderDetail(d,h,forecast){const box=el('detail');if(selectedDay<0||!d.time[selectedDay]){box.classList.add('hidden');box.innerHTML='';return}const now=localISO(),dt=d.time[selectedDay],matches=h.time.map((t,i)=>t.startsWith(dt)?i:-1).filter(i=>i>=0);let arr=[];
  for(let j=0;j<matches.length;j+=3){const ix=matches.slice(j,j+3),ps=ix.map(i=>hourValue(h,'precipitation_probability',i)).filter(Number.isFinite),gusts=ix.map(i=>hourValue(h,'wind_gusts_10m',i)).filter(Number.isFinite);let mm=sumValues(ix.map(i=>hourValue(h,'precipitation',i)));arr.push({t:h.time[ix[0]].slice(11,16),at:h.time[ix[0]],c:periodCode(h,ix),temp:h.temperature_2m?.[ix[0]],wind:h.wind_speed_10m?.[ix[0]],direction:h.wind_direction_10m?.[ix[0]],p:ps.length?Math.max(...ps):null,mm,g:gusts.length?Math.max(...gusts):null})}
- box.classList.remove('hidden');box.innerHTML='<div class="detailhead">'+labelDate(dt,'long')+' · three-hour periods</div><div class="detailnote">Tap the day again to close. Rain chance is the highest hourly chance within each block, and mm is the sum for that block. Wind is at the shown time; gusts are the block maximum (both in km/h). Arrows point where the wind is blowing, with north ↑.</div><div class="detailrows">'+arr.map(x=>'<div class="detailcell'+(isPastDetailPeriod(x.at,now)?' past':'')+'" data-period="'+x.at+'"><strong>'+x.t+'</strong>'+icon(x.c,isDayAt(x.at,d),x.p,x.mm)+' '+fmt(x.temp)+'°<br>'+probability(x.p)+' rain'+(detailRainConflict(x)?'<span aria-describedby="detailRainConflict">*</span>':'')+'<br>'+fmt(x.mm,1)+' mm<br><span class="detail-wind">wind '+fmt(x.wind)+windDirectionArrow(x.direction,x.wind)+'</span><br>gust '+fmt(x.g)+'</div>').join('')+'</div>'+(arr.some(detailRainConflict)?'<p id="detailRainConflict" class="detailnote">* Forecast signals disagree: the rainfall amount or weather symbol indicates precipitation despite a displayed 0% rain chance.</p>':'')+modelComparison(forecast,dt)}
+ box.classList.remove('hidden');box.innerHTML='<div class="detailhead">'+labelDate(dt,'long')+' · three-hour periods</div><div class="detailnote">Tap the day again to close. Rain chance is the highest hourly chance within each block, and mm is the sum for that block. Wind is at the shown time; gusts are the block maximum (both in km/h). Arrows point where the wind is blowing, with north ↑.</div><div class="detailrows">'+arr.map(x=>'<div class="detailcell'+(isPastDetailPeriod(x.at,now)?' past':'')+'" data-period="'+x.at+'"><strong>'+x.t+'</strong>'+icon(x.c,isDayAt(x.at,d),x.p,x.mm)+' '+fmt(x.temp)+'°<br>'+probability(x.p)+' rain'+rainConflictMarker(x,'detailRainConflict')+'<br>'+fmt(x.mm,1)+' mm<br><span class="detail-wind">wind '+fmt(x.wind)+windDirectionArrow(x.direction,x.wind)+'</span><br>gust '+fmt(x.g)+'</div>').join('')+'</div>'+(arr.some(rainConflict)?'<p id="detailRainConflict" class="detailnote">'+RAIN_CONFLICT_NOTE+'</p>':'')+modelComparison(forecast,dt)}
 function modelComparison(x,date){
  const entries=[['ECMWF IFS',x?.ecmwf],['ICON Europe',x?.icon],['GFS',x?.gfs]];
  const rows=entries.map(([name,data])=>{const i=data?.daily?.time?.indexOf(date)??-1;const mm=i>=0?data.daily.precipitation_sum?.[i]:null;return {name,mm:Number.isFinite(mm)?mm:null}});
@@ -268,11 +287,12 @@ async function refresh(){if(updating)return;updating=true;const btn=el('refresh'
  catch(err){const cached=safeLoad()||payload;if(cached){try{payload=cached;render(payload,{stale:true})}catch(e){setStatus('Weather data unavailable','error')}}else{setStatus('Unable to connect to weather service','error');el('stamp').textContent='Could not retrieve live data';}el('error').textContent='Live forecast not available: '+(err.name==='AbortError'?'connection timed out':(err.message||'network error'))+'. '+(cached?'Displaying saved data, which may be outdated.':'Check connectivity and press refresh.');el('error').classList.remove('hidden');}
  finally{updating=false;btn.disabled=false;btn.textContent='↻'}}
  el('refresh').addEventListener('click',()=>{refresh();refreshRadar(true)});
- document.addEventListener('visibilitychange',()=>{if(!document.hidden){updatePastDetailPeriods();updateRainCrossCheck(payload,{stale:forecastStale});if(!payload||Date.now()-Date.parse(payload.savedAt)>=REFRESH_MS)refresh()}});
- setInterval(()=>{if(document.hidden)return;updatePastDetailPeriods();if(payload)el('chance').textContent=probability(remainingDayProbability(payload.data.hourly));updateRainCrossCheck(payload,{stale:forecastStale});if(!payload||Date.now()-Date.parse(payload.savedAt)>=REFRESH_MS)refresh()},60*1000);
+ document.addEventListener('visibilitychange',()=>{if(!document.hidden){updatePastDetailPeriods();updateMainRainChance(payload);updateRainCrossCheck(payload,{stale:forecastStale});if(!payload||Date.now()-Date.parse(payload.savedAt)>=REFRESH_MS)refresh()}});
+ setInterval(()=>{if(document.hidden)return;updatePastDetailPeriods();updateMainRainChance(payload);updateRainCrossCheck(payload,{stale:forecastStale});if(!payload||Date.now()-Date.parse(payload.savedAt)>=REFRESH_MS)refresh()},60*1000);
  window.addEventListener('offline',()=>{forecastStale=true;updateRainCrossCheck(payload,{stale:true});});
  window.addEventListener('online',()=>{refresh();refreshRadar(true)});
  const saved=safeLoad();if(saved){try{render(saved,{stale:true});payload=saved}catch(e){}}
  refresh();
 })();
+
 

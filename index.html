@@ -21,6 +21,7 @@
 <div id="status" class="status"><span class="dot busy"></span><span>Loading the latest forecast</span></div>
 <section class="hero" aria-label="Current model-based weather"><div id="icon" class="weather-icon">⛅</div><div id="temp" class="temperature measure">—°</div><div class="hero-info"><div id="cond" class="condition">Loading…</div><div id="today">High —° · Low —°</div><div id="wind">Wind — · gust — km/h</div><div id="humidity">Humidity —%</div><div id="at" class="muted">Model estimate, not station observation</div></div></section>
 <section class="pills" aria-label="Today's forecast summary"><div class="pill"><div class="val measure" id="chance">—%</div><div class="label">Highest hourly rain chance remaining today</div></div><div class="pill"><div class="val measure" id="rain">— mm</div><div class="label">Rain today (forecast)</div></div><div class="pill"><div class="val measure" id="maxgust">— km/h</div><div class="label">Peak gust forecast today</div></div></section>
+<p id="mainRainConflict" class="detailnote hidden"></p>
 <div id="rainCrossCheck" class="rain-crosscheck hidden" role="status" aria-live="polite"></div>
 <div id="risk" class="alert info" role="status" aria-live="polite"><strong>Checking conditions</strong>Analyzing the next 12 hours for rain and wind.</div>
 <details id="radarPanel" class="radar-panel">
@@ -41,8 +42,10 @@
 </details>
 <div class="sectionline"><span class="sectiontitle">Next 12 hours</span><span class="sectionhint">Two-hour blocks</span></div>
 <section id="hours" class="strip" aria-label="Next twelve-hour forecast"></section>
+<p id="hoursRainConflict" class="detailnote hidden"></p>
 <div class="sectionline"><span class="sectiontitle">Five-day outlook</span><span class="sectionhint">Peak hourly chance · daily rain<br>Tap on date for detailed information</span></div>
 <table class="table" aria-label="Five-day forecast"><thead><tr><th scope="col">Day</th><th scope="col">High / low</th><th scope="col">Rain</th><th scope="col">Gust<br><span class="small">km/h</span></th></tr></thead><tbody id="days"><tr><td colspan="4">Connecting…</td></tr></tbody></table>
+<p id="daysRainConflict" class="detailnote hidden"></p>
 <div class="detail hidden" id="detail" aria-live="polite"></div>
 
 <div id="error" class="errorblock hidden" role="alert"></div>
@@ -79,7 +82,8 @@
 </div>
 <script src="./vendor/astronomy-2.1.19.min.js" defer></script>
 <script src="./moon.js?v=1" defer></script>
-<script src="./app.js?v=29" defer></script>
+<script src="./app.js?v=30" defer></script>
 <script src="./pwa.js?v=3" defer></script>
 </body></html>
+
 
