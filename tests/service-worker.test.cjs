@@ -9,7 +9,7 @@ const root=path.join(__dirname,'..'),source=fs.readFileSync(path.join(root,'sw.j
 const scope='https://example.test/mani-weather/';
 const url=relative=>new URL(relative,scope).href;
 function setup(){
- const events={},stores=new Map([['mani-weather-shell-v37',new Map([[url('./index.html'),'old shell']])],['unrelated-cache',new Map()]]);
+ const events={},stores=new Map([['mani-weather-shell-v38',new Map([[url('./index.html'),'old shell']])],['unrelated-cache',new Map()]]);
  let failInstall=false,online=true,skipped=0,claimed=0;
  const key=request=>typeof request==='string'?url(request):request.url;
  const context={URL,Response,AbortController,setTimeout,clearTimeout,
@@ -24,21 +24,21 @@ function setup(){
   lifecycle:async name=>{let pending;events[name]({waitUntil:p=>pending=p});return pending},
   request:async(requestURL,mode='cors',method='GET')=>{let response;events.fetch({request:{url:requestURL,mode,method},respondWith:p=>response=p});return response}};
 }
-test('successful install and activation replace v37 while retaining unrelated caches',async()=>{
+test('successful install and activation replace v38 while retaining unrelated caches',async()=>{
  const s=setup();await s.lifecycle('install');assert.equal(s.skipped(),1);
- assert.ok(s.stores.has('mani-weather-shell-v37'));assert.ok(s.stores.get('mani-weather-shell-v38').has(url('./app.js?v=33')));
- await s.lifecycle('activate');assert.equal(s.claimed(),1);assert.equal(s.stores.has('mani-weather-shell-v37'),false);assert.ok(s.stores.has('unrelated-cache'));
+ assert.ok(s.stores.has('mani-weather-shell-v38'));assert.ok(s.stores.get('mani-weather-shell-v39').has(url('./app.js?v=33')));
+ await s.lifecycle('activate');assert.equal(s.claimed(),1);assert.equal(s.stores.has('mani-weather-shell-v38'),false);assert.ok(s.stores.has('unrelated-cache'));
  s.setOnline(false);assert.match(await (await s.request(url('./'),'navigate')).text(),/^\.\/$/);
  assert.equal(await (await s.request(url('./app.js?v=33'))).text(),'./app.js?v=33');
 });
 test('failed install never skips waiting or removes the previous working shell',async()=>{
  const s=setup();s.setFailInstall(true);await assert.rejects(s.lifecycle('install'),/asset unavailable/);
- assert.equal(s.skipped(),0);assert.equal(s.claimed(),0);assert.equal(s.stores.get('mani-weather-shell-v37').get(url('./index.html')),'old shell');
+ assert.equal(s.skipped(),0);assert.equal(s.claimed(),0);assert.equal(s.stores.get('mani-weather-shell-v38').get(url('./index.html')),'old shell');
 });
 test('forecast API, unrelated paths and POST requests bypass service-worker caching',async()=>{
  const s=setup();s.setOnline(false);
  for(const [target,mode,method] of [['https://api.open-meteo.com/v1/forecast','cors','GET'],[url('../other/app.js'),'cors','GET'],[url('./not-preloaded.js'),'cors','GET'],[url('./'),'navigate','POST']])assert.equal(await s.request(target,mode,method),undefined);
- assert.equal(s.stores.has('mani-weather-shell-v38'),false);
+ assert.equal(s.stores.has('mani-weather-shell-v39'),false);
 });
 test('shell is network-first, with offline navigation fallback and no API entries',async()=>{
  const s=setup();await s.lifecycle('install');assert.equal(await (await s.request(url('./app.js?v=33'))).text(),'network version');

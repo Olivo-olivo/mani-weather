@@ -87,4 +87,7 @@
 #installStatus:empty{display:none}
 @media(display-mode:standalone){body{padding-top:max(16px,env(safe-area-inset-top));padding-bottom:max(24px,env(safe-area-inset-bottom))}.install-row{display:none}}
 
+/* A matching frame for the full, uncropped sunset photograph. */
+.photo-panel{margin:15px 0 0;padding:8px;border:1px solid #36546b;border-radius:18px;background:#10283b}
+.photo-panel img{display:block;width:100%;height:auto;border-radius:10px}
 
