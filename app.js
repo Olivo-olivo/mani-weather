@@ -1,6 +1,8 @@
 (() => {
 'use strict';
 const LAT=36.8243, LON=22.2811, ZONE='Europe/Athens', CACHE_KEY='mani-weather-live-v4', REFRESH_MS=10*60*1000;
+// Download age is an offline display limit, not a guarantee of model accuracy.
+const MAX_SAVED_AGE_MS=6*60*60*1000, CLOCK_SKEW_MS=5*60*1000;
 const mainFields={current:'temperature_2m,relative_humidity_2m,weather_code,is_day,precipitation,wind_speed_10m,wind_gusts_10m', hourly:'temperature_2m,relative_humidity_2m,weather_code,precipitation,precipitation_probability,wind_speed_10m,wind_direction_10m,wind_gusts_10m,cloud_cover', daily:'weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,wind_gusts_10m_max,sunrise,sunset'};
 const el=id=>document.getElementById(id);
 const fmt=(v,d=0)=>Number.isFinite(v)?Number(v).toFixed(d):'—';
@@ -57,8 +59,34 @@ function labelDate(s,weekday='short'){return new Intl.DateTimeFormat('en-GB',{we
 function buildUrl(model,fields){const u=new URL('https://api.open-meteo.com/v1/forecast');const params={latitude:LAT,longitude:LON,timezone:ZONE,forecast_days:6,wind_speed_unit:'kmh',precipitation_unit:'mm',models:model,...fields};Object.entries(params).forEach(([k,v])=>u.searchParams.set(k,String(v)));return u.toString()}
 async function request(url){const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),14000);try{const r=await fetch(url,{signal:ctl.signal,cache:'no-store'});if(!r.ok)throw Error('Forecast API returned '+r.status);const a=await r.json();if(a.error)throw Error(a.reason||'Forecast provider error');return a}finally{clearTimeout(timer)}}
 function safeSave(payload){try{localStorage.setItem(CACHE_KEY,JSON.stringify(payload))}catch(e){}}
-function safeLoad(){try{const x=JSON.parse(localStorage.getItem(CACHE_KEY)||'null');return x&&x.data&&Number.isFinite(Date.parse(x.savedAt))?x:null}catch(e){return null}}
-let payload=null,selectedDay=-1,updating=false,forecastStale=true;
+function usableForecast(x,now=Date.now(),local=localISO()){
+ const saved=typeof x?.savedAt==='string'?Date.parse(x.savedAt):NaN,age=now-saved;
+ const days=x?.data?.daily?.time,hours=x?.data?.hourly?.time;
+ return Number.isFinite(saved)&&age>=-CLOCK_SKEW_MS&&age<=MAX_SAVED_AGE_MS&&
+  Array.isArray(days)&&days.length>=5&&days.every(t=>typeof t==='string')&&days.includes(local.slice(0,10))&&
+  Array.isArray(hours)&&hours.every(t=>typeof t==='string')&&hours.includes(local.slice(0,13)+':00');
+}
+function safeLoad(){try{const x=JSON.parse(localStorage.getItem(CACHE_KEY)||'null');return usableForecast(x)?x:null}catch(e){return null}}
+let payload=null,selectedDay=-1,updating=false,refreshAgain=false,forecastStale=true,renderedDate=null;
+function clearForecast(){
+ payload=null;selectedDay=-1;forecastStale=true;renderedDate=null;
+ const fields={icon:'—',temp:'—°',cond:'Forecast unavailable',today:'High —° · Low —°',wind:'Wind — · gust — km/h',humidity:'Humidity —%',at:'No recent model estimate available',chance:'N/A',rain:'— mm',maxgust:'— km/h',hours:'Hourly forecast unavailable',stamp:'No usable saved forecast · reconnect to update'};
+ for(const [id,value] of Object.entries(fields))el(id).textContent=value;
+ el('days').innerHTML='<tr><td colspan="4">Forecast unavailable</td></tr>';
+ el('detail').innerHTML='';el('detail').classList.add('hidden');
+ for(const id of ['mainRainConflict','hoursRainConflict','daysRainConflict'])setRainConflictNote(id,false);
+ updateRainCrossCheck(null,{stale:true});
+ el('risk').className='alert info';el('risk').textContent='Live conditions and hazard guidance are unavailable.';
+ setStatus('No recent forecast available','error');
+ el('error').textContent='Saved forecasts expire after six hours or when their time coverage ends. Reconnect and press refresh.';
+ el('error').classList.remove('hidden');
+ window.ManiMoon?.setForecast({data:{}},{stale:true});
+}
+function showSavedForecast(){
+ const candidates=[payload,safeLoad()].filter(x=>usableForecast(x)).sort((a,b)=>Date.parse(b.savedAt)-Date.parse(a.savedAt));
+ for(const candidate of candidates){try{render(candidate,{stale:true});payload=candidate;el('error').textContent='Live update unavailable. Showing a saved forecast downloaded within the last six hours; conditions may have changed.';el('error').classList.remove('hidden');return true}catch(e){}}
+ clearForecast();return false;
+}
 function rainCrossCheck(forecast,now=localISO()){
  const h=forecast?.data?.hourly,start=now.slice(0,13)+':00';
  const first=h?.time?.indexOf(start)??-1;
@@ -107,10 +135,14 @@ function currentSummary(c,h,d){
 }
 function nextHourIndex(hourly){const t=localISO().slice(0,13)+':00';let idx=hourly.time.findIndex(x=>x>=t);return idx<0?hourly.time.length:idx}
 function render(payloadData,{stale=false}={}){
+ if(!usableForecast(payloadData))throw Error('Forecast expired or current time coverage unavailable');
  const a=payloadData.data, d=a.daily, h=a.hourly, c=a.current||{};
  if(!d?.time?.length||!h?.time?.length||d.time.length<5)throw Error('Incomplete forecast data');
  forecastStale=stale;updateRainCrossCheck(payloadData,{stale});
  const dateToday=localISO().slice(0,10), todayIndex=d.time.indexOf(dateToday), dayIndex=todayIndex>=0?todayIndex:0;
+ renderedDate=dateToday;
+ const dayIndices=d.time.flatMap((date,i)=>date>=dateToday?[i]:[]).slice(0,5);
+ if(!dayIndices.includes(selectedDay))selectedDay=-1;
  const usableC=Number.isFinite(c.temperature_2m),hi=modelAtCurrent(h,c),temperature=usableC?c.temperature_2m:h.temperature_2m?.[hi],summary=currentSummary(c,h,d);
  el('icon').innerHTML=summary.glyph;el('temp').textContent=fmt(temperature)+'°';el('cond').textContent=summary.text;
  el('today').textContent='High '+fmt(d.temperature_2m_max?.[dayIndex])+'° · Low '+fmt(d.temperature_2m_min?.[dayIndex])+'°';
@@ -137,8 +169,8 @@ function render(payloadData,{stale=false}={}){
  group.push({time:h.time[first].slice(11,16),at:h.time[first],temp:h.temperature_2m?.[first],code:periodCode(h,ids),mm:accum,prob:gp})}
  el('hours').innerHTML=group.map(x=>'<div class="hour"><time>'+x.time+'</time><span class="glyph">'+icon(x.code,isDayAt(x.at,d),x.prob,x.mm)+'</span><div class="htemp">'+fmt(x.temp)+'°</div><div class="hprob">'+probability(x.prob)+rainConflictMarker({p:x.prob,c:x.code,mm:x.mm},'hoursRainConflict')+'</div><div class="hmm">'+fmt(x.mm,1)+'mm</div></div>').join('')||'<div>Hourly forecast unavailable</div>';
  setRainConflictNote('hoursRainConflict',group.some(x=>rainConflict({p:x.prob,c:x.code,mm:x.mm})));
- el('days').innerHTML=d.time.slice(0,5).map((date,i)=>'<tr data-day="'+i+'" tabindex="0" role="button" aria-expanded="'+(i===selectedDay)+'" aria-controls="detail" aria-label="See '+labelDate(date)+' hourly details"><td><span class="symbol">'+icon(d.weather_code?.[i],true,dayProbability(d,h,i),d.precipitation_sum?.[i])+'</span>'+labelDate(date).split(',')[0]+'</td><td>'+fmt(d.temperature_2m_max?.[i])+'° / '+fmt(d.temperature_2m_min?.[i])+'°</td><td>'+probability(dayProbability(d,h,i))+rainConflictMarker({p:dayProbability(d,h,i),c:d.weather_code?.[i],mm:d.precipitation_sum?.[i]},'daysRainConflict')+' <span class="small">· '+fmt(d.precipitation_sum?.[i],1)+'mm</span></td><td>'+fmt(d.wind_gusts_10m_max?.[i])+'</td></tr>').join('');
- setRainConflictNote('daysRainConflict',d.time.slice(0,5).some((_,i)=>rainConflict({p:dayProbability(d,h,i),c:d.weather_code?.[i],mm:d.precipitation_sum?.[i]})));
+ el('days').innerHTML=dayIndices.map(i=>'<tr data-day="'+i+'" tabindex="0" role="button" aria-expanded="'+(i===selectedDay)+'" aria-controls="detail" aria-label="See '+labelDate(d.time[i])+' hourly details"><td><span class="symbol">'+icon(d.weather_code?.[i],true,dayProbability(d,h,i),d.precipitation_sum?.[i])+'</span>'+labelDate(d.time[i]).split(',')[0]+'</td><td>'+fmt(d.temperature_2m_max?.[i])+'° / '+fmt(d.temperature_2m_min?.[i])+'°</td><td>'+probability(dayProbability(d,h,i))+rainConflictMarker({p:dayProbability(d,h,i),c:d.weather_code?.[i],mm:d.precipitation_sum?.[i]},'daysRainConflict')+' <span class="small">· '+fmt(d.precipitation_sum?.[i],1)+'mm</span></td><td>'+fmt(d.wind_gusts_10m_max?.[i])+'</td></tr>').join('');
+ setRainConflictNote('daysRainConflict',dayIndices.some(i=>rainConflict({p:dayProbability(d,h,i),c:d.weather_code?.[i],mm:d.precipitation_sum?.[i]})));
  el('days').querySelectorAll('tr[data-day]').forEach(row=>{const click=()=>{const x=Number(row.dataset.day);selectedDay=x===selectedDay?-1:x;renderDetail(d,h,payloadData);el('days').querySelectorAll('tr[data-day]').forEach(y=>y.setAttribute('aria-expanded',y.dataset.day===String(selectedDay)?'true':'false'))};row.addEventListener('click',click);row.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();click()}})});
  renderDetail(d,h,payloadData);
  const fetched=new Date(payloadData.savedAt), stamp=athensClock.format(fetched);
@@ -203,19 +235,47 @@ function modelComparison(x,date){
  }
  return '<div class="modelcompare"><div class="detailhead">Rainfall · model comparison</div>'+rows.map(r=>'<div class="modelrow"><span class="modelname">'+r.name+'</span><span class="modelvalue">'+(r.mm===null?'Not available':fmt(r.mm,1)+' mm')+'</span></div>').join('')+'<div class="modelnote">'+interpretation+' '+valid.length+' of 3 model feeds available. <span class="model-methodology">These are deterministic forecasts, not ensemble probabilities; rainfall amounts do not represent rain chances.</span></div></div>';
 }
-async function refresh(){if(updating)return;updating=true;const btn=el('refresh');btn.disabled=true;btn.innerHTML='<span class="spin">↻</span>';el('error').classList.add('hidden');setStatus('Checking current forecast…','busy');
- try{if(navigator.onLine===false)throw Error('device is offline');const comparisonFields={daily:'precipitation_sum',hourly:'precipitation'};const f=await Promise.allSettled([request(buildUrl('best_match',mainFields)),request(buildUrl('icon_eu',comparisonFields)),request(buildUrl('ecmwf_ifs025',comparisonFields)),request(buildUrl('gfs_global',comparisonFields))]);if(f[0].status!=='fulfilled')throw f[0].reason||Error('Forecast service unavailable');const a=f[0].value;if(!a.daily?.time||!a.hourly?.time)throw Error('Incomplete forecast data');
- const next={data:a,icon:f[1].status==='fulfilled'?f[1].value:null,ecmwf:f[2].status==='fulfilled'?f[2].value:null,gfs:f[3].status==='fulfilled'?f[3].value:null,savedAt:new Date().toISOString()};render(next);payload=next;safeSave(payload);}
- catch(err){const cached=safeLoad()||payload;if(cached){try{payload=cached;render(payload,{stale:true})}catch(e){setStatus('Weather data unavailable','error')}}else{setStatus('Unable to connect to weather service','error');el('stamp').textContent='Could not retrieve live data';}el('error').textContent='Live forecast not available: '+(err.name==='AbortError'?'connection timed out':(err.message||'network error'))+'. '+(cached?'Displaying saved data, which may be outdated.':'Check connectivity and press refresh.');el('error').classList.remove('hidden');}
- finally{updating=false;btn.disabled=false;btn.textContent='↻'}}
+function updateVisibleForecast(){
+ if(payload&&!usableForecast(payload))showSavedForecast();
+ if(payload){
+  if(forecastStale||renderedDate!==localISO().slice(0,10)){
+   try{render(payload,{stale:forecastStale})}catch(e){showSavedForecast()}
+  }else{updatePastDetailPeriods();updateMainRainChance(payload);updateRainCrossCheck(payload,{stale:forecastStale});}
+ }
+ if(!payload||Date.now()-Date.parse(payload.savedAt)>=REFRESH_MS)refresh();
+}
+async function refresh({reconnect=false}={}){
+ if(updating){if(reconnect)refreshAgain=true;return}
+ // Expire visible data before waiting for a potentially slow request.
+ if(payload&&!usableForecast(payload))showSavedForecast();
+ updating=true;const btn=el('refresh');btn.disabled=true;btn.innerHTML='<span class="spin">↻</span>';el('error').classList.add('hidden');setStatus('Checking current forecast…','busy');
+ try{
+  if(navigator.onLine===false)throw Error('device is offline');
+  const comparisonFields={daily:'precipitation_sum',hourly:'precipitation'};
+  const f=await Promise.allSettled([request(buildUrl('best_match',mainFields)),request(buildUrl('icon_eu',comparisonFields)),request(buildUrl('ecmwf_ifs025',comparisonFields)),request(buildUrl('gfs_global',comparisonFields))]);
+  if(navigator.onLine===false)throw Error('device is offline');
+  if(f[0].status!=='fulfilled')throw f[0].reason||Error('Forecast service unavailable');
+  const next={data:f[0].value,icon:f[1].status==='fulfilled'?f[1].value:null,ecmwf:f[2].status==='fulfilled'?f[2].value:null,gfs:f[3].status==='fulfilled'?f[3].value:null,savedAt:new Date().toISOString()};
+  render(next);payload=next;safeSave(payload);
+ }catch(err){
+  const cached=showSavedForecast();
+  el('error').textContent='Live forecast not available: '+(err.name==='AbortError'?'connection timed out':(err.message||'network error'))+'. '+(cached?'Showing a saved forecast downloaded within the last six hours; conditions may have changed.':'No usable saved forecast. Reconnect and press refresh.');
+  el('error').classList.remove('hidden');
+ }finally{
+  updating=false;btn.disabled=false;btn.textContent='↻';
+  // An online event during an in-flight request must not be lost.
+  if(refreshAgain){refreshAgain=false;if(navigator.onLine!==false)refresh();}
+ }
+}
  el('refresh').addEventListener('click',()=>{refresh()});
- document.addEventListener('visibilitychange',()=>{if(!document.hidden){updatePastDetailPeriods();updateMainRainChance(payload);updateRainCrossCheck(payload,{stale:forecastStale});if(!payload||Date.now()-Date.parse(payload.savedAt)>=REFRESH_MS)refresh()}});
- setInterval(()=>{if(document.hidden)return;updatePastDetailPeriods();updateMainRainChance(payload);updateRainCrossCheck(payload,{stale:forecastStale});if(!payload||Date.now()-Date.parse(payload.savedAt)>=REFRESH_MS)refresh()},60*1000);
- window.addEventListener('offline',()=>{forecastStale=true;updateRainCrossCheck(payload,{stale:true});});
- window.addEventListener('online',()=>{refresh()});
- const saved=safeLoad();if(saved){try{render(saved,{stale:true});payload=saved}catch(e){}}
+ document.addEventListener('visibilitychange',()=>{if(!document.hidden)updateVisibleForecast()});
+ setInterval(()=>{if(!document.hidden)updateVisibleForecast()},60*1000);
+ window.addEventListener('offline',()=>{showSavedForecast()});
+ window.addEventListener('online',()=>{refresh({reconnect:true})});
+ const saved=safeLoad();if(saved){try{render(saved,{stale:true});payload=saved}catch(e){clearForecast()}}else{clearForecast()}
  refresh();
 })();
+
 
 
 
