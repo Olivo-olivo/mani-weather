@@ -31,7 +31,7 @@ function periodCode(h,ids){
 }
 // File names and labels are fixed internal constants, never provider-supplied HTML.
 function weatherSymbol(name,label){
- return '<img class="weather-symbol" src="./icons/weather/'+name+'.svg" alt="'+label+'" width="64" height="64">';
+ return '<img class="weather-symbol" src="./icons/weather/'+name+'.svg?v=2" alt="'+label+'" width="64" height="64">';
 }
 function icon(code, day=true, rainChance=null, rainMm=null){
  if(code>=95)return weatherSymbol('thunderstorms-rain','Thunderstorms');
