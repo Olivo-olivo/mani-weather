@@ -1,6 +1,6 @@
 'use strict';
-const CACHE = 'mani-weather-shell-v39';
-const ASSETS = ['./', './index.html', './style.css?v=30', './app.js?v=33', './moon.js?v=1', './vendor/astronomy-2.1.19.min.js', './pwa.js?v=3', './manifest.webmanifest', './icon.svg', './night-partly-cloudy.svg', './mani-sunset.png', './icons/icon-192.png', './icons/icon-512.png', './icons/maskable-512.png'];
+const CACHE = 'mani-weather-shell-v40';
+const ASSETS = ['./', './index.html', './style.css?v=31', './app.js?v=34', './moon.js?v=1', './vendor/astronomy-2.1.19.min.js', './pwa.js?v=3', './manifest.webmanifest', './icon.svg', './icons/weather/thunderstorms-rain.svg', './icons/weather/partly-cloudy-day-rain.svg', './icons/weather/rain.svg', './icons/weather/snow.svg', './icons/weather/partly-cloudy-night-rain.svg', './icons/weather/partly-cloudy-day.svg', './icons/weather/clear-day.svg', './icons/weather/clear-night.svg', './icons/weather/cloudy.svg', './icons/weather/partly-cloudy-night.svg', './mani-sunset.png', './icons/icon-192.png', './icons/icon-512.png', './icons/maskable-512.png'];
 const assetURLs = new Set(ASSETS.map(path => new URL(path, self.registration.scope).href));
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)).then(() => self.skipWaiting()));

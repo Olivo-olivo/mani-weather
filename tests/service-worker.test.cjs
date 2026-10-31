@@ -26,10 +26,10 @@ function setup(){
 }
 test('successful install and activation replace v38 while retaining unrelated caches',async()=>{
  const s=setup();await s.lifecycle('install');assert.equal(s.skipped(),1);
- assert.ok(s.stores.has('mani-weather-shell-v38'));assert.ok(s.stores.get('mani-weather-shell-v39').has(url('./app.js?v=33')));
+ assert.ok(s.stores.has('mani-weather-shell-v38'));assert.ok(s.stores.get('mani-weather-shell-v40').has(url('./app.js?v=34')));
  await s.lifecycle('activate');assert.equal(s.claimed(),1);assert.equal(s.stores.has('mani-weather-shell-v38'),false);assert.ok(s.stores.has('unrelated-cache'));
  s.setOnline(false);assert.match(await (await s.request(url('./'),'navigate')).text(),/^\.\/$/);
- assert.equal(await (await s.request(url('./app.js?v=33'))).text(),'./app.js?v=33');
+ assert.equal(await (await s.request(url('./app.js?v=34'))).text(),'./app.js?v=34');
 });
 test('failed install never skips waiting or removes the previous working shell',async()=>{
  const s=setup();s.setFailInstall(true);await assert.rejects(s.lifecycle('install'),/asset unavailable/);
@@ -38,10 +38,10 @@ test('failed install never skips waiting or removes the previous working shell',
 test('forecast API, unrelated paths and POST requests bypass service-worker caching',async()=>{
  const s=setup();s.setOnline(false);
  for(const [target,mode,method] of [['https://api.open-meteo.com/v1/forecast','cors','GET'],[url('../other/app.js'),'cors','GET'],[url('./not-preloaded.js'),'cors','GET'],[url('./'),'navigate','POST']])assert.equal(await s.request(target,mode,method),undefined);
- assert.equal(s.stores.has('mani-weather-shell-v39'),false);
+ assert.equal(s.stores.has('mani-weather-shell-v40'),false);
 });
 test('shell is network-first, with offline navigation fallback and no API entries',async()=>{
- const s=setup();await s.lifecycle('install');assert.equal(await (await s.request(url('./app.js?v=33'))).text(),'network version');
+ const s=setup();await s.lifecycle('install');assert.equal(await (await s.request(url('./app.js?v=34'))).text(),'network version');
  s.setOnline(false);assert.equal(await (await s.request(url('./unknown-page'),'navigate')).text(),'./index.html');
  for(const store of s.stores.values())assert.ok([...store.keys()].every(key=>!key.includes('open-meteo')));
 });

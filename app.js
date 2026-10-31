@@ -29,20 +29,24 @@ function periodCode(h,ids){
  const codes=ids.map(i=>h.weather_code?.[i]).filter(Number.isFinite);
  return codes.length?codes.reduce((a,b)=>rank(b)>rank(a)||rank(b)===rank(a)&&b>a?b:a):null;
 }
+// File names and labels are fixed internal constants, never provider-supplied HTML.
+function weatherSymbol(name,label){
+ return '<img class="weather-symbol" src="./icons/weather/'+name+'.svg" alt="'+label+'" width="64" height="64">';
+}
 function icon(code, day=true, rainChance=null, rainMm=null){
- if(code>=95)return '⛈️';
- if(code>=80&&code<=82)return day?'🌦️':'🌧️';
- if(code>=51&&code<=67)return '🌧️';
- if(code>=71&&code<=86)return '🌨️';
+ if(code>=95)return weatherSymbol('thunderstorms-rain','Thunderstorms');
+ if(code>=80&&code<=82)return day?weatherSymbol('partly-cloudy-day-rain','Showers'):weatherSymbol('rain','Rain');
+ if(code>=51&&code<=67)return weatherSymbol('rain','Rain');
+ if(code>=71&&code<=86)return weatherSymbol('snow','Snow');
  // Represent measurable precipitation even when the weather code says dry.
- if(Number.isFinite(rainMm)&&rainMm>0)return day?'🌦️':'🌧️';
+ if(Number.isFinite(rainMm)&&rainMm>0)return day?weatherSymbol('partly-cloudy-day-rain','Showers'):weatherSymbol('rain','Rain');
  // Chance changes only the icon, never the forecasted rainfall or probability.
- if(Number.isFinite(rainChance)&&rainChance>=60)return '🌧️';
- if(Number.isFinite(rainChance)&&rainChance>=40)return day?'🌦️':'☁️💧';
- if(code==null)return day?'⛅':'<img class="weather-symbol" src="./night-partly-cloudy.svg" alt="Partly cloudy night" width="64" height="64">';
- if(code<=1)return day?'☀️':'🌙';
- if(code===2)return day?'⛅':'<img class="weather-symbol" src="./night-partly-cloudy.svg" alt="Partly cloudy night" width="64" height="64">';
- return '☁️';
+ if(Number.isFinite(rainChance)&&rainChance>=60)return weatherSymbol('rain','Rain');
+ if(Number.isFinite(rainChance)&&rainChance>=40)return day?weatherSymbol('partly-cloudy-day-rain','Showers'):weatherSymbol('partly-cloudy-night-rain','Rain possible at night');
+ if(code==null)return day?weatherSymbol('partly-cloudy-day','Partly cloudy'):weatherSymbol('partly-cloudy-night','Partly cloudy night');
+ if(code<=1)return day?weatherSymbol('clear-day','Clear skies'):weatherSymbol('clear-night','Clear night');
+ if(code===2)return day?weatherSymbol('partly-cloudy-day','Partly cloudy'):weatherSymbol('partly-cloudy-night','Partly cloudy night');
+ return weatherSymbol('cloudy','Cloudy');
 }
 function isDayAt(localTime,daily){
  const day=localTime?.slice(0,10), i=daily.time?.indexOf(day)??-1;
@@ -127,7 +131,7 @@ function currentSummary(c,h,d){
  const day=c.is_day===0?false:c.is_day===1?true:isDayAt(at,d);
  const code=Number.isFinite(c.weather_code)?c.weather_code:hourlyCode;
  if(wetCode(code))return {glyph:icon(code,day),text:description(code),precipitation:true};
- if(Number.isFinite(c.precipitation)&&c.precipitation>0)return {glyph:'🌧️',text:'Rain or drizzle',precipitation:true};
+ if(Number.isFinite(c.precipitation)&&c.precipitation>0)return {glyph:weatherSymbol('rain','Rain'),text:'Rain or drizzle',precipitation:true};
  // An hourly prediction is guidance for the hour, not an observation of rain now.
  if(wetCode(hourlyCode))return {glyph:icon(hourlyCode,day),text:hourlyCode>=95?'Thunderstorms possible this hour':description(hourlyCode)+' forecast this hour',precipitation:true};
  if(Number.isFinite(chance)&&chance>=40)return {glyph:icon(code,day,chance),text:chance>=60?'Rain likely this hour':'Rain possible this hour',precipitation:true};

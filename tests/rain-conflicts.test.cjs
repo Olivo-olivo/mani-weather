@@ -51,14 +51,14 @@ for(const input of [{code:61},{code:0,mm:0.1},{code:0,mm:0.001},{code:61,p:0.4}]
   assert.match(s.nodes.get('chance').innerHTML,/0%<span aria-describedby="mainRainConflict">\*<\/span>/);
   for(const [id,note] of [['hours','hoursRainConflict'],['days','daysRainConflict'],['detail','detailRainConflict']])assert.ok(s.nodes.get(id).innerHTML.includes('aria-describedby="'+note+'"'));
   assert.match(s.nodes.get('detail').innerHTML,/Forecast signals disagree/);
-  assert.equal(s.nodes.get('icon').innerHTML,'🌧️');
+  assert.equal(s.nodes.get('icon').innerHTML,'<img class="weather-symbol" src="./icons/weather/rain.svg" alt="Rain" width="64" height="64">');
  });
 }
 test('hourly wet code is explained when current code is dry',()=>{
  const s=setup();render(s,fixture({code:61,currentCode:0}));
  assert.ok(shown(s,'mainRainConflict'));assert.equal(s.nodes.get('cond').textContent,'Rain or drizzle forecast this hour');
 });
-for(const [p,glyph,word] of [[40,'🌦️','possible'],[60,'🌧️','likely']]){
+for(const [p,glyph,word] of [[40,'<img class="weather-symbol" src="./icons/weather/partly-cloudy-day-rain.svg" alt="Showers" width="64" height="64">','possible'],[60,'<img class="weather-symbol" src="./icons/weather/rain.svg" alt="Rain" width="64" height="64">','likely']]){
  test(p+'% with a dry code preserves probability-led icons without conflict notes',()=>{
   const s=setup();render(s,fixture({code:0,p}));
   assert.equal(s.nodes.get('icon').innerHTML,glyph);assert.equal(s.nodes.get('chance').textContent,p+'%');
@@ -82,11 +82,11 @@ test('dry zero and rounded one percent do not trigger conflicts',()=>{
 });
 test('expired hourly wet code is not borrowed for the main explanation',()=>{
  const s=setup(),f=fixture({code:61,currentCode:0});f.data.current.time='2026-10-24T12:30';render(s,f);
- assert.equal(s.nodes.get('icon').innerHTML,'☀️');assert.equal(shown(s,'mainRainConflict'),false);
+ assert.equal(s.nodes.get('icon').innerHTML,'<img class="weather-symbol" src="./icons/weather/clear-day.svg" alt="Clear skies" width="64" height="64">');assert.equal(shown(s,'mainRainConflict'),false);
 });
 test('minute timer and return to tab update the main marker at hour rollover',()=>{
  const s=setup(),f=fixture({code:0,p:0});f.data.hourly.precipitation_probability[13]=60;render(s,f);
- assert.equal(s.nodes.get('chance').textContent,'60%');assert.equal(s.nodes.get('icon').innerHTML,'🌧️');
+ assert.equal(s.nodes.get('chance').textContent,'60%');assert.equal(s.nodes.get('icon').innerHTML,'<img class="weather-symbol" src="./icons/weather/rain.svg" alt="Rain" width="64" height="64">');
  s.a.setNow('2026-10-25T13:01');s.tick();
  assert.equal(s.nodes.get('chance').textContent,'0%*');assert.ok(shown(s,'mainRainConflict'));
  s.document.hidden=true;s.a.setNow('2026-10-25T12:59');s.tick();assert.ok(shown(s,'mainRainConflict'));
@@ -97,21 +97,45 @@ test('a successful refresh clears all resolved notes and markers',async()=>{
  const s=setup();s.a.selectDay(0);render(s,fixture());s.setFeed(fixture({code:0}).data);await s.a.refresh();
  for(const id of ['mainRainConflict','hoursRainConflict','daysRainConflict']){assert.equal(shown(s,id),false);assert.equal(s.nodes.get(id).textContent,'');}
  for(const id of ['chance','hours','days','detail'])assert.doesNotMatch(s.nodes.get(id).innerHTML,/aria-describedby="(?:main|hours|days|detail)RainConflict"/);
- assert.equal(s.nodes.get('icon').innerHTML,'☀️');
+ assert.equal(s.nodes.get('icon').innerHTML,'<img class="weather-symbol" src="./icons/weather/clear-day.svg" alt="Clear skies" width="64" height="64">');
 });
 test('saved forecasts and absent current data can still explain hourly conflicts',()=>{
  const s=setup(),f=fixture();f.data.current=null;
  s.a.render(f,{stale:true});assert.ok(shown(s,'mainRainConflict'));assert.match(s.nodes.get('status').textContent,/Saved forecast/);
 });
 test('snow and thunderstorm symbols survive zero-probability explanations',()=>{
- for(const [code,glyph] of [[71,'🌨️'],[95,'⛈️']]){const s=setup();render(s,fixture({code}));assert.equal(s.nodes.get('icon').innerHTML,glyph);assert.ok(shown(s,'mainRainConflict'));}
+ for(const [code,glyph] of [[71,'<img class="weather-symbol" src="./icons/weather/snow.svg" alt="Snow" width="64" height="64">'],[95,'<img class="weather-symbol" src="./icons/weather/thunderstorms-rain.svg" alt="Thunderstorms" width="64" height="64">']]){const s=setup();render(s,fixture({code}));assert.equal(s.nodes.get('icon').innerHTML,glyph);assert.ok(shown(s,'mainRainConflict'));}
 });
 test('page and service-worker asset versions match',()=>{
  const sw=fs.readFileSync(path.join(root,'sw.js'),'utf8');
  const appURL=html.match(/src="(\.\/app\.js\?v=\d+)"/)[1];
- assert.ok(sw.includes("'"+appURL+"'"));assert.ok(sw.includes('mani-weather-shell-v39'));
+ assert.ok(sw.includes("'"+appURL+"'"));assert.ok(sw.includes('mani-weather-shell-v40'));
  for(const id of ['mainRainConflict','hoursRainConflict','daysRainConflict'])assert.ok(html.includes('id="'+id+'" class="detailnote hidden"'));
 });
 
 
 
+
+test('day and night artwork preserves dry, wet and probability-led choices',()=>{
+ const {a}=setup();
+ for(const [code,day,p,mm,name] of [
+  [0,true,null,null,'clear-day'],[1,false,null,null,'clear-night'],
+  [2,true,null,null,'partly-cloudy-day'],[2,false,null,null,'partly-cloudy-night'],
+  [null,false,null,null,'partly-cloudy-night'],[3,true,null,null,'cloudy'],
+  [45,false,null,null,'cloudy'],[80,true,0,0,'partly-cloudy-day-rain'],
+  [80,false,0,0,'rain'],[61,true,0,0,'rain'],[71,true,0,0,'snow'],
+  [95,false,0,0,'thunderstorms-rain'],[0,false,40,0,'partly-cloudy-night-rain'],
+  [0,false,60,0,'rain'],[0,true,0,0.001,'partly-cloudy-day-rain']
+ ])assert.match(a.icon(code,day,p,mm),new RegExp('/'+name+'\\.svg"'));
+});
+test('every weather asset exists, is static and is available in the offline shell',()=>{
+ const sw=fs.readFileSync(path.join(root,'sw.js'),'utf8');
+ const names=[...source.matchAll(/weatherSymbol\('([^']+)'/g)].map(m=>m[1]);
+ assert.equal(new Set(names).size,10);
+ for(const name of new Set(names)){
+  const relative='./icons/weather/'+name+'.svg';
+  const svg=fs.readFileSync(path.join(root,relative),'utf8');
+  assert.match(svg,/<svg\b/);assert.doesNotMatch(svg,/<(?:script|animate|animateTransform|foreignObject)\b/);
+  assert.ok(sw.includes("'"+relative+"'"),relative);
+ }
+});
