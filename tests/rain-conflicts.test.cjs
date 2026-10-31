@@ -36,7 +36,7 @@ function setup(){
  const end=source.indexOf(' const saved=safeLoad();');assert.ok(end>0);
  vm.runInContext(source.slice(0,end)+`
  let testNow='2026-10-25T12:30';localISO=()=>testNow;
- globalThis.api={icon,currentSummary,rainConflict,render,refresh,updateMainRainChance,
+ globalThis.api={icon,currentSummary,rainConflict,chanceWithZeroAmount,render,refresh,updateMainRainChance,
   setNow(value){testNow=value},setPayload(value){payload=value},selectDay(value){selectedDay=value}};
  })();`,context);
  return {a:context.api,nodes,events,document,tick:timers.find(t=>t.ms===60000).fn,setFeed(value){feed=value}};
@@ -59,11 +59,11 @@ test('hourly wet code is explained when current code is dry',()=>{
  assert.ok(shown(s,'mainRainConflict'));assert.equal(s.nodes.get('cond').textContent,'Rain or drizzle forecast this hour');
 });
 for(const [p,glyph,word] of [[40,'<img class="weather-symbol" src="./icons/weather/partly-cloudy-day-rain.svg?v=2" alt="Showers" width="64" height="64">','possible'],[60,'<img class="weather-symbol" src="./icons/weather/rain.svg?v=2" alt="Rain" width="64" height="64">','likely']]){
- test(p+'% with a dry code preserves probability-led icons without conflict notes',()=>{
+ test(p+'% with a dry code preserves probability-led icons and explains the zero amount',()=>{
   const s=setup();render(s,fixture({code:0,p}));
-  assert.equal(s.nodes.get('icon').innerHTML,glyph);assert.equal(s.nodes.get('chance').textContent,p+'%');
+  assert.equal(s.nodes.get('icon').innerHTML,glyph);assert.equal(s.nodes.get('chance').textContent,p+'%*');
   assert.equal(s.nodes.get('cond').textContent,'Rain '+word+' this hour');
-  for(const id of ['mainRainConflict','hoursRainConflict','daysRainConflict'])assert.equal(shown(s,id),false);
+  for(const id of ['mainRainConflict','hoursRainConflict','daysRainConflict']){assert.ok(shown(s,id));assert.match(s.nodes.get(id).textContent,/Rain possible despite 0.0 mm/);}
   assert.ok(s.nodes.get('hours').innerHTML.includes(glyph));assert.ok(s.nodes.get('days').innerHTML.includes(glyph));
  });
 }
@@ -86,12 +86,12 @@ test('expired hourly wet code is not borrowed for the main explanation',()=>{
 });
 test('minute timer and return to tab update the main marker at hour rollover',()=>{
  const s=setup(),f=fixture({code:0,p:0});f.data.hourly.precipitation_probability[13]=60;render(s,f);
- assert.equal(s.nodes.get('chance').textContent,'60%');assert.equal(s.nodes.get('icon').innerHTML,'<img class="weather-symbol" src="./icons/weather/rain.svg?v=2" alt="Rain" width="64" height="64">');
+ assert.equal(s.nodes.get('chance').textContent,'60%*');assert.equal(s.nodes.get('icon').innerHTML,'<img class="weather-symbol" src="./icons/weather/rain.svg?v=2" alt="Rain" width="64" height="64">');
  s.a.setNow('2026-10-25T13:01');s.tick();
  assert.equal(s.nodes.get('chance').textContent,'0%*');assert.ok(shown(s,'mainRainConflict'));
  s.document.hidden=true;s.a.setNow('2026-10-25T12:59');s.tick();assert.ok(shown(s,'mainRainConflict'));
  s.document.hidden=false;s.events.visibilitychange();
- assert.equal(s.nodes.get('chance').textContent,'60%');assert.equal(shown(s,'mainRainConflict'),false);
+ assert.equal(s.nodes.get('chance').textContent,'60%*');assert.ok(shown(s,'mainRainConflict'));assert.match(s.nodes.get('mainRainConflict').textContent,/Rain possible despite/);
 });
 test('a successful refresh clears all resolved notes and markers',async()=>{
  const s=setup();s.a.selectDay(0);render(s,fixture());s.setFeed(fixture({code:0}).data);await s.a.refresh();
@@ -109,7 +109,7 @@ test('snow and thunderstorm symbols survive zero-probability explanations',()=>{
 test('page and service-worker asset versions match',()=>{
  const sw=fs.readFileSync(path.join(root,'sw.js'),'utf8');
  const appURL=html.match(/src="(\.\/app\.js\?v=\d+)"/)[1];
- assert.ok(sw.includes("'"+appURL+"'"));assert.ok(sw.includes('mani-weather-shell-v42'));
+ assert.ok(sw.includes("'"+appURL+"'"));assert.ok(sw.includes('mani-weather-shell-v43'));
  for(const id of ['mainRainConflict','hoursRainConflict','daysRainConflict'])assert.ok(html.includes('id="'+id+'" class="detailnote hidden"'));
 });
 
@@ -138,4 +138,47 @@ test('every weather asset exists, is static and is available in the offline shel
   assert.match(svg,/<svg\b/);assert.doesNotMatch(svg,/<(?:script|animate|animateTransform|foreignObject)\b/);
   assert.ok(sw.includes("'"+relative+"?v=2'"),relative);
  }
+});
+
+for(const p of [65,68])test(p+'% and zero mm are explained in every forecast view without changing data',()=>{
+ const s=setup(),f=fixture({code:0,p}),before=JSON.stringify(f);s.a.selectDay(0);render(s,f);
+ assert.equal(JSON.stringify(f),before);
+ assert.equal(s.nodes.get('chance').textContent,p+'%*');assert.equal(s.nodes.get('rain').textContent,'0.0 mm');
+ for(const id of ['mainRainConflict','hoursRainConflict','daysRainConflict'])assert.match(s.nodes.get(id).textContent,/does not guarantee dry weather or only light rain/);
+ for(const [id,note] of [['hours','hoursRainConflict'],['days','daysRainConflict'],['detail','detailRainConflict']])assert.ok(s.nodes.get(id).innerHTML.includes('aria-describedby="'+note+'"'));
+ assert.match(s.nodes.get('detail').innerHTML,/Rain possible despite 0.0 mm/);
+});
+test('zero-amount explanation follows rounding and requires valid substantial probability',()=>{
+ const {a}=setup();
+ for(const mm of [0,0.001,0.049])assert.equal(a.chanceWithZeroAmount({p:65,mm}),true);
+ for(const mm of [0.05,0.1,null,undefined,NaN,-0.01])assert.equal(a.chanceWithZeroAmount({p:65,mm}),false);
+ for(const p of [0,39.9,null,undefined,NaN,101])assert.equal(a.chanceWithZeroAmount({p,mm:0}),false);
+ assert.equal(a.chanceWithZeroAmount({p:40,mm:0}),true);
+});
+test('mixed periods explain both directions of disagreement',()=>{
+ const s=setup(),f=fixture({code:0,p:65});s.a.selectDay(0);
+ f.data.hourly.weather_code.fill(61,12,15);f.data.hourly.precipitation_probability.fill(0,13,16);
+ render(s,f);
+ for(const id of ['hoursRainConflict','daysRainConflict']){
+  assert.match(s.nodes.get(id).textContent,/Rain possible despite/);
+ }
+ for(const text of [s.nodes.get('hoursRainConflict').textContent,s.nodes.get('detail').innerHTML]){
+  assert.match(text,/Forecast signals disagree/);assert.match(text,/Rain possible despite/);
+ }
+});
+test('new notes clear when amounts become nonzero or probability drops',()=>{
+ const s=setup();s.a.selectDay(0);render(s,fixture({code:0,p:68}));
+ for(const f of [fixture({code:0,p:68,mm:0.1}),fixture({code:0,p:10})]){
+  render(s,f);for(const id of ['mainRainConflict','hoursRainConflict','daysRainConflict'])assert.equal(shown(s,id),false);
+  assert.doesNotMatch(s.nodes.get('detail').innerHTML,/detailRainConflict/);
+ }
+});
+test('minute update clears the new note when the rainy hour has passed',()=>{
+ const s=setup(),f=fixture({code:0,p:0});f.data.hourly.precipitation_probability[13]=68;f.data.current.time='2026-10-25T11:30';render(s,f);
+ assert.match(s.nodes.get('mainRainConflict').textContent,/Rain possible despite/);
+ s.a.setNow('2026-10-25T13:01');s.tick();assert.equal(shown(s,'mainRainConflict'),false);assert.equal(s.nodes.get('chance').textContent,'0%');
+});
+test('saved forecasts retain the explanation and saved-data warning',()=>{
+ const s=setup();s.a.render(fixture({code:0,p:65}),{stale:true});
+ assert.match(s.nodes.get('mainRainConflict').textContent,/Rain possible despite/);assert.match(s.nodes.get('status').textContent,/Saved forecast/);
 });

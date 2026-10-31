@@ -93,3 +93,8 @@
 .photo-panel{margin:15px 0 0;padding:8px;border:1px solid #36546b;border-radius:18px;background:#10283b}
 .photo-panel img{display:block;width:100%;height:auto;border-radius:10px}
 
+
+.forecast-help{margin-top:16px;border-top:1px solid #42647b;padding-top:12px;color:#bbd7e6;font-size:12px;line-height:1.6}
+.forecast-help summary{cursor:pointer;color:#b8e6ff;font-weight:650;padding:8px 0;min-height:44px}
+.forecast-help summary:focus-visible{outline:2px solid #b4e9ff;outline-offset:3px}
+.forecast-help p{margin:10px 0}
