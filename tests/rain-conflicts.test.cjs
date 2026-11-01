@@ -63,7 +63,7 @@ for(const [p,glyph,word] of [[40,'<img class="weather-symbol" src="./icons/weath
   const s=setup();render(s,fixture({code:0,p}));
   assert.equal(s.nodes.get('icon').innerHTML,glyph);assert.equal(s.nodes.get('chance').textContent,p+'%*');
   assert.equal(s.nodes.get('cond').textContent,'Rain '+word+' this hour');
-  for(const id of ['mainRainConflict','hoursRainConflict','daysRainConflict']){assert.ok(shown(s,id));assert.match(s.nodes.get(id).textContent,/Rain possible despite 0.0 mm/);}
+  for(const id of ['mainRainConflict','hoursRainConflict','daysRainConflict']){assert.ok(shown(s,id));assert.match(s.nodes.get(id).textContent,/Rain is still possible with 0.0 mm forecast/);}
   assert.ok(s.nodes.get('hours').innerHTML.includes(glyph));assert.ok(s.nodes.get('days').innerHTML.includes(glyph));
  });
 }
@@ -91,7 +91,7 @@ test('minute timer and return to tab update the main marker at hour rollover',()
  assert.equal(s.nodes.get('chance').textContent,'0%*');assert.ok(shown(s,'mainRainConflict'));
  s.document.hidden=true;s.a.setNow('2026-10-25T12:59');s.tick();assert.ok(shown(s,'mainRainConflict'));
  s.document.hidden=false;s.events.visibilitychange();
- assert.equal(s.nodes.get('chance').textContent,'60%*');assert.ok(shown(s,'mainRainConflict'));assert.match(s.nodes.get('mainRainConflict').textContent,/Rain possible despite/);
+ assert.equal(s.nodes.get('chance').textContent,'60%*');assert.ok(shown(s,'mainRainConflict'));assert.match(s.nodes.get('mainRainConflict').textContent,/Rain is still possible/);
 });
 test('a successful refresh clears all resolved notes and markers',async()=>{
  const s=setup();s.a.selectDay(0);render(s,fixture());s.setFeed(fixture({code:0}).data);await s.a.refresh();
@@ -109,7 +109,7 @@ test('snow and thunderstorm symbols survive zero-probability explanations',()=>{
 test('page and service-worker asset versions match',()=>{
  const sw=fs.readFileSync(path.join(root,'sw.js'),'utf8');
  const appURL=html.match(/src="(\.\/app\.js\?v=\d+)"/)[1];
- assert.ok(sw.includes("'"+appURL+"'"));assert.ok(sw.includes('mani-weather-shell-v43'));
+ assert.ok(sw.includes("'"+appURL+"'"));assert.ok(sw.includes('mani-weather-shell-v44'));
  for(const id of ['mainRainConflict','hoursRainConflict','daysRainConflict'])assert.ok(html.includes('id="'+id+'" class="detailnote hidden"'));
 });
 
@@ -144,9 +144,9 @@ for(const p of [65,68])test(p+'% and zero mm are explained in every forecast vie
  const s=setup(),f=fixture({code:0,p}),before=JSON.stringify(f);s.a.selectDay(0);render(s,f);
  assert.equal(JSON.stringify(f),before);
  assert.equal(s.nodes.get('chance').textContent,p+'%*');assert.equal(s.nodes.get('rain').textContent,'0.0 mm');
- for(const id of ['mainRainConflict','hoursRainConflict','daysRainConflict'])assert.match(s.nodes.get(id).textContent,/does not guarantee dry weather or only light rain/);
+ for(const id of ['mainRainConflict','hoursRainConflict','daysRainConflict'])assert.match(s.nodes.get(id).textContent,/does not mean no possibility of rain/);
  for(const [id,note] of [['hours','hoursRainConflict'],['days','daysRainConflict'],['detail','detailRainConflict']])assert.ok(s.nodes.get(id).innerHTML.includes('aria-describedby="'+note+'"'));
- assert.match(s.nodes.get('detail').innerHTML,/Rain possible despite 0.0 mm/);
+ assert.match(s.nodes.get('detail').innerHTML,/Rain is still possible with 0.0 mm forecast/);
 });
 test('zero-amount explanation follows rounding and requires valid substantial probability',()=>{
  const {a}=setup();
@@ -160,10 +160,10 @@ test('mixed periods explain both directions of disagreement',()=>{
  f.data.hourly.weather_code.fill(61,12,15);f.data.hourly.precipitation_probability.fill(0,13,16);
  render(s,f);
  for(const id of ['hoursRainConflict','daysRainConflict']){
-  assert.match(s.nodes.get(id).textContent,/Rain possible despite/);
+  assert.match(s.nodes.get(id).textContent,/Rain is still possible/);
  }
  for(const text of [s.nodes.get('hoursRainConflict').textContent,s.nodes.get('detail').innerHTML]){
-  assert.match(text,/Forecast signals disagree/);assert.match(text,/Rain possible despite/);
+  assert.match(text,/Forecast signals disagree/);assert.match(text,/Rain is still possible/);
  }
 });
 test('new notes clear when amounts become nonzero or probability drops',()=>{
@@ -175,10 +175,10 @@ test('new notes clear when amounts become nonzero or probability drops',()=>{
 });
 test('minute update clears the new note when the rainy hour has passed',()=>{
  const s=setup(),f=fixture({code:0,p:0});f.data.hourly.precipitation_probability[13]=68;f.data.current.time='2026-10-25T11:30';render(s,f);
- assert.match(s.nodes.get('mainRainConflict').textContent,/Rain possible despite/);
+ assert.match(s.nodes.get('mainRainConflict').textContent,/Rain is still possible/);
  s.a.setNow('2026-10-25T13:01');s.tick();assert.equal(shown(s,'mainRainConflict'),false);assert.equal(s.nodes.get('chance').textContent,'0%');
 });
 test('saved forecasts retain the explanation and saved-data warning',()=>{
  const s=setup();s.a.render(fixture({code:0,p:65}),{stale:true});
- assert.match(s.nodes.get('mainRainConflict').textContent,/Rain possible despite/);assert.match(s.nodes.get('status').textContent,/Saved forecast/);
+ assert.match(s.nodes.get('mainRainConflict').textContent,/Rain is still possible/);assert.match(s.nodes.get('status').textContent,/Saved forecast/);
 });
