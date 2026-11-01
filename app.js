@@ -206,7 +206,7 @@ function windDirectionArrow(degrees,speed){
 // Explain conflicting forecast signals without changing the supplied probability or icon.
 const RAIN_CONFLICT_NOTE='* Forecast signals disagree: the rainfall amount or weather symbol indicates precipitation despite a displayed 0% rain chance.';
 function displayedZeroChance(p){return Number.isFinite(p)&&p>=0&&Math.round(p)===0;}
-const RAIN_AMOUNT_NOTE='* Rain is still possible with 0.0 mm forecast. The chance of rain and expected rainfall amount are calculated separately, and very small amounts may round down to zero. A 0.0 mm forecast does not mean no possibility of rain.';
+const RAIN_AMOUNT_NOTE='* Rain is still possible with 0.0 mm forecast. The chance of rain and expected rainfall amount are calculated separately, and very small amounts may round down to zero.';
 function zeroChanceWetSignal(x){
  return displayedZeroChance(x.p)&&(wetCode(x.c)||(Number.isFinite(x.mm)&&x.mm>0));
 }

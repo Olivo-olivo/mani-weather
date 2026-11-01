@@ -109,7 +109,7 @@ test('snow and thunderstorm symbols survive zero-probability explanations',()=>{
 test('page and service-worker asset versions match',()=>{
  const sw=fs.readFileSync(path.join(root,'sw.js'),'utf8');
  const appURL=html.match(/src="(\.\/app\.js\?v=\d+)"/)[1];
- assert.ok(sw.includes("'"+appURL+"'"));assert.ok(sw.includes('mani-weather-shell-v44'));
+ assert.ok(sw.includes("'"+appURL+"'"));assert.ok(sw.includes('mani-weather-shell-v45'));
  for(const id of ['mainRainConflict','hoursRainConflict','daysRainConflict'])assert.ok(html.includes('id="'+id+'" class="detailnote hidden"'));
 });
 
@@ -144,7 +144,7 @@ for(const p of [65,68])test(p+'% and zero mm are explained in every forecast vie
  const s=setup(),f=fixture({code:0,p}),before=JSON.stringify(f);s.a.selectDay(0);render(s,f);
  assert.equal(JSON.stringify(f),before);
  assert.equal(s.nodes.get('chance').textContent,p+'%*');assert.equal(s.nodes.get('rain').textContent,'0.0 mm');
- for(const id of ['mainRainConflict','hoursRainConflict','daysRainConflict'])assert.match(s.nodes.get(id).textContent,/does not mean no possibility of rain/);
+ for(const id of ['mainRainConflict','hoursRainConflict','daysRainConflict'])assert.match(s.nodes.get(id).textContent,/very small amounts may round down to zero/);
  for(const [id,note] of [['hours','hoursRainConflict'],['days','daysRainConflict'],['detail','detailRainConflict']])assert.ok(s.nodes.get(id).innerHTML.includes('aria-describedby="'+note+'"'));
  assert.match(s.nodes.get('detail').innerHTML,/Rain is still possible with 0.0 mm forecast/);
 });
