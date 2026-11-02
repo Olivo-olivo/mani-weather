@@ -70,7 +70,8 @@
 .detailcell.past{opacity:.55}
 
 /* Local SVG artwork is identical across operating systems. */
-.weather-symbol{display:inline-block;width:1.4em;height:1.4em;vertical-align:middle;object-fit:contain}
+/* Enlarge the artwork within its existing slot, keeping cards and text in place. */
+.weather-symbol{display:inline-block;width:1.4em;height:1.4em;vertical-align:middle;object-fit:contain;transform:scale(1.2)}
 .weather-icon .weather-symbol{display:block;width:1.44em;height:1.44em}
 .detailcell .weather-symbol{width:28px;height:28px}
 .hour .glyph .weather-symbol{display:block;width:32px;height:32px;margin:0 auto}
