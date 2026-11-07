@@ -6,10 +6,30 @@ const clock=new Intl.DateTimeFormat('en-GB',{timeZone:ZONE,hour:'2-digit',minute
 const calendar=new Intl.DateTimeFormat('sv-SE',{timeZone:ZONE,year:'numeric',month:'2-digit',day:'2-digit'});
 const shortDate=new Intl.DateTimeFormat('en-GB',{timeZone:ZONE,day:'numeric',month:'short'});
 const observer=A?new A.Observer(LAT,LON,0):null;
-let forecast=null, cachedNight=null;
+let forecast=null, cachedNight=null, cachedSolar=null;
 function position(body,date){const eq=A.Equator(body,date,observer,true,true);return A.Horizon(date,observer,eq.ra,eq.dec,'normal');}
 function event(body,direction,start,days){return A.SearchRiseSet(body,observer,direction,start,days)?.date||null;}
 function eventText(date,base){return date?clock.format(date)+(calendar.format(date)!==calendar.format(base)?' · '+shortDate.format(date):''):'Not in this passage';}
+function renderSolar(now=new Date()){
+ const day=calendar.format(now);
+ if(!cachedSolar||cachedSolar.day!==day){
+  // This is at or before Greek midnight, including summer time. Search today's events,
+  // rather than the next passage: sunrise must stay visible after it has happened.
+  const start=new Date(Date.parse(day+'T00:00:00Z')-3*HOUR);
+  cachedSolar={day,rise:event('Sun',1,start,1),set:event('Sun',-1,start,1)};
+ }
+ for(const [name,date] of [['sunrise',cachedSolar.rise],['sunset',cachedSolar.set]]){
+  const label=name==='sunrise'?'Sunrise':'Sunset',node=el(name+'Time');
+  const valid=date&&calendar.format(date)===day;
+  node.textContent=valid?clock.format(date):'—:—';
+  node.setAttribute('aria-label',valid?label+' '+clock.format(date)+' Greek time':label+' unavailable');
+  if(valid)node.setAttribute('datetime',date.toISOString());else node.removeAttribute('datetime');
+  el(name+'Event').title=label+' · '+shortDate.format(now)+' · Greek time';
+ }
+}
+function safeSolar(){try{renderSolar()}catch(error){
+ for(const name of ['sunrise','sunset']){const node=el(name+'Time');node.textContent='—:—';node.removeAttribute('datetime');node.setAttribute('aria-label',(name==='sunrise'?'Sunrise':'Sunset')+' unavailable');}
+}}
 function phaseName(angle){
  if(angle<5||angle>=355)return 'New Moon';
  if(angle<85)return 'Waxing crescent';if(angle<95)return 'First quarter';
@@ -92,7 +112,7 @@ function render(now=new Date()){
  el('moonHours').innerHTML=[...indices].sort((a,b)=>a-b).map(i=>{const s=samples[i];return '<div class="moon-hour"><time>'+eventText(s.date,night.start)+'</time><span>'+compass(s.azimuth)+' · '+Math.round(s.altitude)+'° high</span><span>'+(s.cloud===null?'Cloud data unavailable':Math.round(s.cloud)+'% cloud')+'</span></div>';}).join('');
  el('moonPhaseTime').textContent='Phase at '+eventText(reference,night.start)+' Greek time. The drawing shows the lit fraction, not the Moon’s tilt in the sky.';
 }
-function safeRender(){try{render()}catch(error){el('moonPhase').textContent='Moon information unavailable';el('moonIllumination').textContent='Please reload the page';el('moonOutlook').textContent='The lunar calculation could not be completed.';}}
+function safeRender(){safeSolar();try{render()}catch(error){el('moonPhase').textContent='Moon information unavailable';el('moonIllumination').textContent='Please reload the page';el('moonOutlook').textContent='The lunar calculation could not be completed.';}}
 window.ManiMoon={setForecast(data,{stale=false}={}){forecast={hourly:data.data?.hourly,savedAt:data.savedAt,stale};safeRender();}};
 el('moonPanel').addEventListener('toggle',()=>{if(el('moonPanel').open)safeRender();});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)safeRender();});
@@ -100,3 +120,4 @@ window.addEventListener('offline',()=>{if(forecast)forecast.stale=true;safeRende
 setInterval(()=>{if(!document.hidden)safeRender();},60000);
 safeRender();
 })();
+

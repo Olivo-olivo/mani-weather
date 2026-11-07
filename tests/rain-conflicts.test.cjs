@@ -109,7 +109,7 @@ test('snow and thunderstorm symbols survive zero-probability explanations',()=>{
 test('page and service-worker asset versions match',()=>{
  const sw=fs.readFileSync(path.join(root,'sw.js'),'utf8');
  const appURL=html.match(/src="(\.\/app\.js\?v=\d+)"/)[1];
- assert.ok(sw.includes("'"+appURL+"'"));assert.ok(sw.includes('mani-weather-shell-v46'));
+ assert.ok(sw.includes("'"+appURL+"'"));assert.ok(sw.includes('mani-weather-shell-v47'));
  for(const id of ['mainRainConflict','hoursRainConflict','daysRainConflict'])assert.ok(html.includes('id="'+id+'" class="detailnote hidden"'));
 });
 
@@ -182,3 +182,4 @@ test('saved forecasts retain the explanation and saved-data warning',()=>{
  const s=setup();s.a.render(fixture({code:0,p:65}),{stale:true});
  assert.match(s.nodes.get('mainRainConflict').textContent,/Rain is still possible/);assert.match(s.nodes.get('status').textContent,/Saved forecast/);
 });
+
