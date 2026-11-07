@@ -18,7 +18,7 @@ function fixture({code=61,p=0,mm=0,currentCode=code,currentMm=mm}={}){
  return {savedAt:new Date().toISOString(),data:{hourly,daily,current:{time:'2026-10-25T12:30',weather_code:currentCode,precipitation:currentMm,temperature_2m:20,is_day:1}}};
 }
 
-function setup(){
+function setup({reducedMotion=false}={}){
  const nodes=new Map(),events={},timers=[];
  for(const [,id] of html.matchAll(/\bid="([^"]+)"/g)){
   const classes=new Set();let content='';
@@ -28,7 +28,7 @@ function setup(){
  }
  const document={hidden:false,getElementById:id=>nodes.get(id),addEventListener:(event,fn)=>events[event]=fn};
  let feed=fixture().data;
- const context={document,window:{addEventListener:(event,fn)=>events[event]=fn},navigator:{onLine:true},Intl,Date,URL,AbortController,
+ const context={document,window:{addEventListener:(event,fn)=>events[event]=fn,matchMedia:()=>({matches:reducedMotion})},navigator:{onLine:true},Intl,Date,URL,AbortController,
   setTimeout,clearTimeout,setInterval:(fn,ms)=>timers.push({fn,ms}),localStorage:{getItem(){return null},setItem(){}},
   fetch:async()=>({ok:true,json:async()=>structuredClone(feed)})};
  vm.createContext(context);
@@ -109,7 +109,7 @@ test('snow and thunderstorm symbols survive zero-probability explanations',()=>{
 test('page and service-worker asset versions match',()=>{
  const sw=fs.readFileSync(path.join(root,'sw.js'),'utf8');
  const appURL=html.match(/src="(\.\/app\.js\?v=\d+)"/)[1];
- assert.ok(sw.includes("'"+appURL+"'"));assert.ok(sw.includes('mani-weather-shell-v48'));
+ assert.ok(sw.includes("'"+appURL+"'"));assert.ok(sw.includes('mani-weather-shell-v49'));
  for(const id of ['mainRainConflict','hoursRainConflict','daysRainConflict'])assert.ok(html.includes('id="'+id+'" class="detailnote hidden"'));
 });
 
@@ -183,3 +183,18 @@ test('saved forecasts retain the explanation and saved-data warning',()=>{
  assert.match(s.nodes.get('mainRainConflict').textContent,/Rain is still possible/);assert.match(s.nodes.get('status').textContent,/Saved forecast/);
 });
 
+
+for(const reducedMotion of [false,true])test('date activation scrolls only on opening, reduced motion='+reducedMotion,()=>{
+ const s=setup({reducedMotion}),calls=[],handlers=[{},{}];
+ s.nodes.get('detail').scrollIntoView=options=>calls.push(options);
+ const rows=handlers.map((events,i)=>({dataset:{day:String(i)},setAttribute(){},addEventListener(name,fn){events[name]=fn}}));
+ s.nodes.get('days').querySelectorAll=()=>rows;
+ render(s,fixture());
+ handlers[0].click();
+ assert.equal(shown(s,'detail'),true);assert.equal(calls.length,1);
+ assert.equal(calls[0].behavior,reducedMotion?'instant':'smooth');assert.equal(calls[0].block,'start');
+ handlers[0].click();assert.equal(shown(s,'detail'),false);assert.equal(calls.length,1);
+ handlers[1].click();assert.equal(shown(s,'detail'),true);assert.equal(calls.length,2);
+ let prevented=false;handlers[0].keydown({key:'Enter',preventDefault(){prevented=true}});
+ assert.equal(prevented,true);assert.equal(calls.length,3);
+});
