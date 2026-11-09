@@ -109,7 +109,7 @@ test('snow and thunderstorm symbols survive zero-probability explanations',()=>{
 test('page and service-worker asset versions match',()=>{
  const sw=fs.readFileSync(path.join(root,'sw.js'),'utf8');
  const appURL=html.match(/src="(\.\/app\.js\?v=\d+)"/)[1];
- assert.ok(sw.includes("'"+appURL+"'"));assert.ok(sw.includes('mani-weather-shell-v49'));
+ assert.ok(sw.includes("'"+appURL+"'"));assert.ok(sw.includes('mani-weather-shell-v50'));
  for(const id of ['mainRainConflict','hoursRainConflict','daysRainConflict'])assert.ok(html.includes('id="'+id+'" class="detailnote hidden"'));
 });
 
@@ -186,15 +186,23 @@ test('saved forecasts retain the explanation and saved-data warning',()=>{
 
 for(const reducedMotion of [false,true])test('date activation scrolls only on opening, reduced motion='+reducedMotion,()=>{
  const s=setup({reducedMotion}),calls=[],handlers=[{},{}];
- s.nodes.get('detail').scrollIntoView=options=>calls.push(options);
+ s.nodes.get('detail').scrollIntoView=options=>{
+  // Model bindings that accept auto/smooth but reject instant.
+  assert.ok(['auto','smooth'].includes(options.behavior));calls.push(options);
+ };
  const rows=handlers.map((events,i)=>({dataset:{day:String(i)},setAttribute(){},addEventListener(name,fn){events[name]=fn}}));
  s.nodes.get('days').querySelectorAll=()=>rows;
  render(s,fixture());
  handlers[0].click();
  assert.equal(shown(s,'detail'),true);assert.equal(calls.length,1);
- assert.equal(calls[0].behavior,reducedMotion?'instant':'smooth');assert.equal(calls[0].block,'start');
+ assert.equal(calls[0].behavior,reducedMotion?'auto':'smooth');assert.equal(calls[0].block,'start');
  handlers[0].click();assert.equal(shown(s,'detail'),false);assert.equal(calls.length,1);
  handlers[1].click();assert.equal(shown(s,'detail'),true);assert.equal(calls.length,2);
  let prevented=false;handlers[0].keydown({key:'Enter',preventDefault(){prevented=true}});
  assert.equal(prevented,true);assert.equal(calls.length,3);
+});
+
+test('reduced-motion auto scrolling is paired with the CSS override',()=>{
+ const css=fs.readFileSync(path.join(root,'style.css'),'utf8');
+ assert.match(css,/@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{[^}]*scroll-behavior:\s*auto\s*!important/);
 });
